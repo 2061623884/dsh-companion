@@ -30,8 +30,8 @@ npm test
 npm run package
 ```
 
-架构及兼容边界见 [docs/architecture.md](docs/architecture.md)，验收要求见 [docs/spec.md](docs/spec.md)，验证方法见 [docs/validation.md](docs/validation.md)。
+架构及兼容边界见 `docs/architecture.md`，验收要求见 `docs/spec.md`，验证方法见 `docs/validation.md`。
 
 包的发布者暂为 `local-development`，仅用于本地验证。开源或发布 Marketplace 前应由维护者填写自己的仓库地址、发布者标识并复核商标使用；本项目未发布到任何平台。
 
-本项目从 DeepSeek Harness for VSCode 的定制原型整理而来，保留上游 MIT 许可与归属，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。本项目与 DeepSeek 官方没有隶属关系。
+本项目从 DeepSeek Harness for VSCode 的定制原型整理而来，保留上游 MIT 许可与归属，见 `THIRD_PARTY_NOTICES.md`。本项目与 DeepSeek 官方没有隶属关系。

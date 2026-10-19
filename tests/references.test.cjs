@@ -29,6 +29,7 @@ test('selection is immutable snapshot; full-file serialization uses latest unsav
   const d = new Draft(); c.sync(selection, d);
   const payload = await c.serialize(d.refs[0].value, new AbortController().signal);
   assert.match(payload, /"content":"abc"/); assert.match(payload, /"unsaved":true/); assert.equal(reads, 0);
+  assert.doesNotMatch(payload, /ownerSessionId|contextKey|"auto"/);
   c.sync(file, d);
   assert.match(await c.serialize(d.refs[0].value, new AbortController().signal), /latest buffer/);
   assert.equal(reads, 1);

@@ -9,3 +9,4 @@ build.mjs
 package-lock.json
 .gitignore
 dist/test/**
+AGENTS.md

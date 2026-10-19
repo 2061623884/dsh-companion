@@ -66,7 +66,11 @@ export class ReferenceController {
     if (state) { state.submitted = true; state.serializing++; }
     try {
       signal.throwIfAborted();
-      const value = reference.kind === 'selection' ? reference : await this.readFile(reference.uri, signal);
+      let value: ResolvedFile & { startLine?: number; endLine?: number };
+      if (reference.kind === 'selection') {
+        const { uri, filePath, language, unsaved, startLine, endLine, content } = reference;
+        value = { uri, filePath, language, unsaved, startLine, endLine, content };
+      } else value = await this.readFile(reference.uri, signal);
       signal.throwIfAborted();
       return `\n${REFERENCE_START}\n${JSON.stringify(value)}\n${REFERENCE_END}\n`;
     } finally {

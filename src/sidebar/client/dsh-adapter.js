@@ -50,6 +50,7 @@ window.__ModuleLoader__.load({
         const pendingReads = new Map();
         const references = new ReferenceController(readReference, scheduleSync);
         let readSequence = 0, inputBinding = null, offInput = () => {};
+        const pendingManualReferences = [];
         const contextBar = document.createElement('div'); contextBar.id = 'dsh-companion-context';
         const workspaceLabel = button('工作区', () => bindWorkspace(true));
         contextBar.append(workspaceLabel);
@@ -223,6 +224,9 @@ window.__ModuleLoader__.load({
           }
           if (!binding || bindingPending) return;
           references.sync(editorContext?.reference || null, draftFor(binding));
+          if (draftFor(binding).snapshot().editable) {
+            for (const reference of pendingManualReferences.splice(0)) insertReference(binding, reference);
+          }
         }
         function syncReferenceControls() {
           const binding = mainBinding();
@@ -331,8 +335,7 @@ window.__ModuleLoader__.load({
             editorContext = event.data.context; bindWorkspace(); sync(); return;
           }
           if (event.data.type === 'editor-reference') {
-            const binding = mainBinding();
-            if (binding) insertReference(binding, event.data.reference);
+            pendingManualReferences.push(event.data.reference); scheduleSync();
             return;
           }
           if (event.data.type === 'reference-result') {

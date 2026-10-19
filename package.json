@@ -6,12 +6,20 @@
   "publisher": "local-development",
   "license": "MIT",
   "private": true,
-  "engines": { "vscode": "^1.106.0" },
-  "categories": ["AI", "Other"],
+  "engines": {
+    "vscode": "^1.106.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
   "main": "./dist/extension.js",
-  "extensionKind": ["ui"],
-  "activationEvents": ["onView:dshCompanion.chat"],
-  "files": ["dist/**", "media/**", "README.md", "LICENSE", "THIRD_PARTY_NOTICES.md"],
+  "extensionKind": [
+    "ui"
+  ],
+  "activationEvents": [
+    "onView:dshCompanion.chat"
+  ],
   "scripts": {
     "build": "node build.mjs",
     "check": "tsc --noEmit",
@@ -19,22 +27,82 @@
     "package": "npm run check && npm run build && vsce package --allow-missing-repository --skip-license --out ../outputs/dsh-companion-0.1.0.vsix"
   },
   "contributes": {
-    "viewsContainers": { "secondarySidebar": [{ "id": "dshCompanion", "title": "DSH Companion", "icon": "media/whale.svg" }] },
-    "views": { "dshCompanion": [{ "type": "webview", "id": "dshCompanion.chat", "name": "DSH Companion" }] },
+    "viewsContainers": {
+      "secondarySidebar": [
+        {
+          "id": "dshCompanion",
+          "title": "DSH Companion",
+          "icon": "media/whale.svg"
+        }
+      ]
+    },
+    "views": {
+      "dshCompanion": [
+        {
+          "type": "webview",
+          "id": "dshCompanion.chat",
+          "name": "DSH Companion"
+        }
+      ]
+    },
     "commands": [
-      { "command": "dshCompanion.open", "title": "DSH Companion: 打开右侧聊天", "icon": "media/whale.svg" },
-      { "command": "dshCompanion.refresh", "title": "DSH Companion: 重新连接桌面版", "icon": "$(refresh)" },
-      { "command": "dshCompanion.reference", "title": "DSH Companion: 引用当前文件或选区" }
+      {
+        "command": "dshCompanion.open",
+        "title": "DSH Companion: 打开右侧聊天",
+        "icon": "media/whale.svg"
+      },
+      {
+        "command": "dshCompanion.refresh",
+        "title": "DSH Companion: 重新连接桌面版",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "dshCompanion.reference",
+        "title": "DSH Companion: 引用当前文件或选区"
+      }
     ],
     "menus": {
-      "editor/title": [{ "command": "dshCompanion.open", "group": "navigation" }],
-      "editor/context": [{ "command": "dshCompanion.reference", "when": "editorTextFocus", "group": "9_cutcopypaste@100" }],
-      "view/title": [{ "command": "dshCompanion.refresh", "when": "view == dshCompanion.chat", "group": "navigation" }]
+      "editor/title": [
+        {
+          "command": "dshCompanion.open",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "dshCompanion.reference",
+          "when": "editorTextFocus",
+          "group": "9_cutcopypaste@100"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "dshCompanion.refresh",
+          "when": "view == dshCompanion.chat",
+          "group": "navigation"
+        }
+      ]
     },
-    "configuration": { "title": "DSH Companion", "properties": {
-      "dshCompanion.diagnostics": { "type": "boolean", "default": false, "description": "记录发送阶段耗时及字节数，不记录代码正文或认证信息。" }
-    } }
+    "configuration": {
+      "title": "DSH Companion",
+      "properties": {
+        "dshCompanion.diagnostics": {
+          "type": "boolean",
+          "default": false,
+          "description": "记录发送阶段耗时及字节数，不记录代码正文或认证信息。"
+        }
+      }
+    }
   },
-  "dependencies": { "js-yaml": "^4.1.0" },
-  "devDependencies": { "@types/js-yaml": "^4.0.9", "@types/node": "^22.0.0", "@types/vscode": "1.106.0", "typescript": "^5.9.0", "esbuild": "^0.25.0", "@vscode/vsce": "^3.6.0" }
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.0.0",
+    "@types/vscode": "1.106.0",
+    "typescript": "^5.9.0",
+    "esbuild": "^0.25.0",
+    "@vscode/vsce": "^3.6.0"
+  }
 }

@@ -56,7 +56,10 @@ export class DesktopConnection {
     this.server = server;
     server.on('connection', socket => { this.sockets.add(socket); socket.on('close', () => this.sockets.delete(socket)); });
     server.on('upgrade', (request, socket, head) => {
-      this.upgrade(request, socket, head).catch(() => socket.end('HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\n\r\nDSH connection unavailable'));
+      this.upgrade(request, socket, head).catch(error => {
+        const code = (error as NodeJS.ErrnoException).code || error.name;
+        socket.end(`HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\nContent-Type: text/plain\r\n\r\nDSH connection unavailable (${code})`);
+      });
     });
     await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', () => { server.off('error', reject); resolve(); }); });
     if (this.closed) { await new Promise<void>(resolve => server.close(() => resolve())); throw new Error('DSH 连接已释放'); }
