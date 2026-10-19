@@ -3,7 +3,7 @@ import path from 'node:path';
 import { load, dump, JSON_SCHEMA } from 'js-yaml';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 async function exists(file) {
   try { await fs.access(file); return true; }
@@ -99,13 +99,18 @@ async function copyReferencedAttachments(events, source, target, report, store) 
     const original = ref.mediaType ? store.imageHostPath(ref) : store.fileHostPath(ref);
     const relative = path.relative(root, original);
     const destination = path.join(target, 'attachments/v1', relative);
-    if (await exists(destination)) continue;
+    if (await exists(destination)) {
+      const existing = await fs.readFile(destination);
+      if (ref.attachmentId === 'sha256:' + createHash('sha256').update(existing).digest('hex')) continue;
+    }
     const content = await fs.readFile(original);
     if (ref.attachmentId !== 'sha256:' + createHash('sha256').update(content).digest('hex')) {
       throw Object.assign(new Error('Invalid source attachment'), { code: 'DSH_IMPORT_ATTACHMENT_INVALID' });
     }
     await fs.mkdir(path.dirname(destination), { recursive: true });
-    await fs.writeFile(destination, content, { flag: 'wx' }); report.attachmentFiles++;
+    const temporary = destination + '.import-' + randomUUID();
+    await fs.writeFile(temporary, content, { flag: 'wx' });
+    await fs.rename(temporary, destination); report.attachmentFiles++;
   }
 }
 

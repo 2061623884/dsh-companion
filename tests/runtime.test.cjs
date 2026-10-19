@@ -51,10 +51,18 @@ test('one-time import preserves source, excludes queued work and credentials, an
   await assert.rejects(fs.access(path.join(home, 'profiles/companion/.dsh-workbuddy-connect/.workbuddy-auth.json')));
   assert.equal(createHash('sha256').update(await fs.readFile(filename)).digest('hex'), before);
   client.dispose(); await stopped(first.pid);
+  const prefix = (await fs.readdir(path.join(source, 'attachments/v1/objects')))[0];
+  const attachment = (await fs.readdir(path.join(source, 'attachments/v1/objects', prefix))).find(name => /^[a-f0-9]{64}$/.test(name));
+  const relative = path.join('attachments/v1/objects', prefix, attachment);
+  await fs.writeFile(path.join(home, relative), 'interrupted partial attachment');
+  await execute(path.join(runtime, 'bin/node.exe'), ['--expose-internals', 'tests/runtime-fixture.mjs', runtime, source, 'finish'], { windowsHide: true });
   await fs.writeFile(filename, 'invalid source after first migration');
   const next = new RuntimeClient(runtime, home, source); t.after(() => next.dispose());
   const second = await next.acquire();
   assert.equal(await fs.readFile(path.join(home, 'profiles/companion/cordis.patch.yml'), 'utf8'), patch);
+  const retried = JSON.parse(await fs.readFile(path.join(home, 'migration.json')));
+  assert.equal(retried.historySessions, 2); assert.equal(retried.skipped.length, 0);
+  assert.deepEqual(await fs.readFile(path.join(home, relative)), await fs.readFile(path.join(source, relative)));
   next.dispose(); await stopped(second.pid);
 });
 
