@@ -6,6 +6,12 @@ import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 
 export interface RuntimeAddress { pid: number; port: number }
+interface RuntimeFailure { stage: string; code: string; errorName?: string; frames?: string[]; pid?: number; version?: string }
+function failureOf(message: RuntimeFailure): Error {
+  const failure = new Error(`DSH ${message.stage}失败 (${message.code}, ${message.errorName || 'RuntimeError'})`);
+  failure.stack = failure.message + '\n' + (message.frames || []).join('\n');
+  return failure;
+}
 export class RuntimeClient {
   private socket: net.Socket | undefined;
   private ready: RuntimeAddress | undefined;
@@ -25,10 +31,10 @@ export class RuntimeClient {
     const identity = createHash('sha256').update(path.resolve(this.home).toLowerCase()).digest('hex').slice(0, 32);
     const pipe = `\\\\.\\pipe\\dsh-companion-${identity}`;
     let launched = false;
-    let childFailure: Error | undefined;
+    let childFailure: Promise<Error> | undefined;
     const deadline = Date.now() + 120000;
     while (!this.closed) {
-      if (childFailure) throw childFailure;
+      if (childFailure) throw await childFailure;
       try {
         return await new Promise<RuntimeAddress>((resolve, reject) => {
           const socket = net.connect(pipe);
@@ -51,9 +57,11 @@ export class RuntimeClient {
               catch { socket.destroy(Object.assign(new Error('DSH 控制协议无效'), { code: 'DSH_CONTROL_PROTOCOL' })); return; }
               if (message.type === 'error') {
                 settled = true; socket.destroy();
-                const failure = new Error(`DSH ${message.stage || '启动'}失败 (${message.code}, ${message.errorName || 'RuntimeError'})`);
-                failure.stack = failure.message + '\n' + (message.frames || []).join('\n');
-                reject(failure); return;
+                reject(failureOf(message)); return;
+              }
+              if (message.type === 'stopping') {
+                settled = true; socket.destroy();
+                reject(Object.assign(new Error('DSH 后台正在保存退出'), { code: 'DSH_RUNTIME_STOPPING' })); return;
               }
               if (message.type === 'ready') {
                 if (message.version !== manifest.version || !Number.isInteger(message.pid) || !Number.isInteger(message.port) || message.port < 1 || message.port > 65535) {
@@ -67,13 +75,21 @@ export class RuntimeClient {
         });
       } catch (error) {
         const code = (error as NodeJS.ErrnoException).code;
-        if (code !== 'ENOENT' && code !== 'ECONNREFUSED') throw error;
+        if (code !== 'ENOENT' && code !== 'ECONNREFUSED' && code !== 'DSH_RUNTIME_STOPPING') throw error;
         if (Date.now() >= deadline) throw new Error('DSH 控制入口启动超时 (DSH_RUNTIME_TIMEOUT)');
-        if (!launched && !this.closed) {
+        if (code !== 'DSH_RUNTIME_STOPPING' && !launched && !this.closed) {
           const child = spawn(path.join(this.directory, 'bin', 'node.exe'), ['--expose-internals', path.join(this.directory, 'host.mjs'), this.home, this.sourceHome],
             { windowsHide: true, detached: true, stdio: 'ignore', cwd: this.directory });
           await new Promise<void>((resolve, reject) => { child.once('spawn', resolve); child.once('error', reject); });
-          child.once('exit', code => { if (code !== 0) childFailure = new Error(`DSH 运行进程退出 (${code ?? 'SIGNAL'})`); });
+          child.once('exit', code => {
+            if (code === 0) return;
+            childFailure = (async () => {
+              let record: RuntimeFailure;
+              try { record = JSON.parse(await readFile(path.join(path.dirname(this.home), 'runtime-error.json'), 'utf8')); }
+              catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; return new Error(`DSH 运行进程退出 (${code ?? 'SIGNAL'})`); }
+              return record.pid === child.pid && record.version === manifest.version ? failureOf(record) : new Error(`DSH 运行进程退出 (${code ?? 'SIGNAL'})`);
+            })();
+          });
           child.unref(); launched = true;
         }
         await new Promise(resolve => setTimeout(resolve, 100));

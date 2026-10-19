@@ -1,6 +1,7 @@
 const { test } = require('node:test'), assert = require('node:assert/strict');
 const fs = require('node:fs/promises'), path = require('node:path'), os = require('node:os');
 const { execFile } = require('node:child_process'), { promisify } = require('node:util'), { createHash } = require('node:crypto');
+const net = require('node:net'), { pathToFileURL } = require('node:url');
 const { RuntimeClient } = require('../dist/test/runtime/client');
 const { RuntimeConnection } = require('../dist/test/runtime/connection');
 const runtime = path.resolve('runtime'), execute = promisify(execFile);
@@ -17,6 +18,11 @@ test('bundled runtime cold-starts without desktop, shares windows and exits only
   t.after(() => clients.forEach(client => client.dispose()));
   const [a, b] = await Promise.all(clients.map(client => client.acquire()));
   assert.equal(a.pid, b.pid); assert.equal(a.port, b.port);
+  const independent = new RuntimeClient(runtime, path.join(directory, 'separate-home'), source);
+  t.after(() => independent.dispose());
+  const separate = await independent.acquire();
+  assert.notEqual(separate.pid, a.pid); assert.notEqual(separate.port, a.port);
+  independent.dispose(); await stopped(separate.pid); process.kill(a.pid, 0);
   const connection = new RuntimeConnection({ runtimeDirectory: runtime, dataHome: home, assetsDirectory: path.resolve('dist') });
   const base = await connection.start();
   assert.equal((await fetch(base + '/?dsh-companion=1')).status, 200);
@@ -50,4 +56,52 @@ test('one-time import preserves source, excludes queued work and credentials, an
   const second = await next.acquire();
   assert.equal(await fs.readFile(path.join(home, 'profiles/companion/cordis.patch.yml'), 'utf8'), patch);
   next.dispose(); await stopped(second.pid);
+});
+
+test('rapid migration failure preserves stage and error code for the first client', { timeout: 10000 }, async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-fast-fail-'));
+  const source = path.join(directory, 'desktop'); await fs.mkdir(source);
+  await fs.writeFile(path.join(source, '.credentials.yaml'), 'null');
+  const client = new RuntimeClient(runtime, path.join(directory, 'home'), source); t.after(() => client.dispose());
+  await assert.rejects(client.acquire(), /import.*DSH_IMPORT_CREDENTIAL_SCHEMA/);
+  await fs.writeFile(path.join(source, '.credentials.yaml'), JSON.stringify({ version: 1, refs: {}, records: {} }));
+  const ready = await client.acquire(); client.dispose(); await stopped(ready.pid);
+});
+
+test('owner pipe stays bound while the last-client shutdown saves its runtime', { timeout: 30000 }, async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-owner-'));
+  const home = path.join(directory, 'home'), profile = path.join(home, 'profiles/companion'), marker = path.join(directory, 'saving');
+  await fs.mkdir(profile, { recursive: true });
+  await fs.writeFile(path.join(home, 'migration.json'), JSON.stringify({ version: 1, skipped: [] }));
+  await fs.writeFile(path.join(profile, 'package.json'), JSON.stringify({ private: true, dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'] } } }));
+  await fs.writeFile(path.join(profile, 'cordis.patch.yml'), JSON.stringify([{ insert: [{ id: 'delay', name: pathToFileURL(path.resolve('tests/slow-dispose.mjs')).href, config: { marker } }] }]));
+  const client = new RuntimeClient(runtime, home, path.join(directory, 'none')); t.after(() => client.dispose());
+  const first = await client.acquire(); client.dispose();
+  for (let i = 0; i < 100; i++) { try { await fs.access(marker); break; } catch (error) { if (error.code !== 'ENOENT') throw error; } await sleep(100); }
+  await fs.access(marker); process.kill(first.pid, 0);
+  const identity = createHash('sha256').update(path.resolve(home).toLowerCase()).digest('hex').slice(0, 32);
+  const reply = await new Promise((resolve, reject) => {
+    const socket = net.connect(`\\\\.\\pipe\\dsh-companion-${identity}`);
+    socket.on('error', reject); socket.on('connect', () => socket.write(JSON.stringify({ type: 'attach', version: '0.3.0' }) + '\n'));
+    socket.once('data', value => { socket.destroy(); resolve(JSON.parse(value)); });
+  });
+  assert.equal(reply.type, 'stopping');
+  const next = new RuntimeClient(runtime, home, path.join(directory, 'none')); t.after(() => next.dispose());
+  const second = await next.acquire(); assert.notEqual(second.pid, first.pid);
+  assert.throws(() => process.kill(first.pid, 0), { code: 'ESRCH' }); next.dispose(); await stopped(second.pid);
+});
+
+test('an upgraded client waits for the old runtime grace instead of failing or booting beside it', { timeout: 30000 }, async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-upgrade-'));
+  const oldRuntime = path.join(directory, 'runtime'), home = path.join(directory, 'home'), source = path.join(directory, 'none');
+  await fs.mkdir(oldRuntime);
+  for (const name of ['host.mjs', 'import.mjs']) await fs.copyFile(path.join(runtime, name), path.join(oldRuntime, name));
+  for (const name of ['bin', 'node_modules']) await fs.symlink(path.join(runtime, name), path.join(oldRuntime, name), 'junction');
+  const manifest = JSON.parse(await fs.readFile(path.join(runtime, 'package.json'))); manifest.version = '0.2.9';
+  await fs.writeFile(path.join(oldRuntime, 'package.json'), JSON.stringify(manifest));
+  const old = new RuntimeClient(oldRuntime, home, source); t.after(() => old.dispose());
+  const before = await old.acquire(); old.dispose();
+  const next = new RuntimeClient(runtime, home, source); t.after(() => next.dispose());
+  const after = await next.acquire(); assert.notEqual(before.pid, after.pid);
+  assert.throws(() => process.kill(before.pid, 0), { code: 'ESRCH' }); next.dispose(); await stopped(after.pid);
 });

@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
+import { createHash } from 'node:crypto';
 const [runtime, source] = process.argv.slice(2);
 const require = createRequire(path.join(runtime, 'package.json'));
 const base = createRequire(require.resolve('@deepseek-ai/dsh-base'));
@@ -18,13 +19,19 @@ await fs.writeFile(path.join(source, 'profiles/desktop/cordis.patch.yml'), JSON.
 ]));
 await fs.writeFile(path.join(source, 'profiles/desktop/.dsh-workbuddy-connect/settings.json'), JSON.stringify({ disabledModelsCN: ['fixture'], autoCheckInCN: true, autoCheckInAI: true }));
 await fs.writeFile(path.join(source, 'profiles/desktop/.dsh-workbuddy-connect/.workbuddy-auth.json'), 'not-an-importable-token');
-await fs.mkdir(path.join(source, 'attachments/v1'), { recursive: true });
-await fs.writeFile(path.join(source, 'attachments/v1/fixture'), 'attachment');
+const image = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aXXsAAAAASUVORK5CYII=', 'base64');
+const hash = createHash('sha256').update(image).digest('hex');
+const objectRoot = path.join(source, 'attachments/v1/objects', hash.slice(0, 2));
+await fs.mkdir(objectRoot, { recursive: true }); await fs.writeFile(path.join(objectRoot, hash), image);
+await fs.writeFile(path.join(objectRoot, 'unrelated-image-must-not-import'), 'not referenced');
 try {
   await ctx.plugin(persistence, { root: path.join(source, 'sessions'), compression: 'zstd' }).await();
   for (const id of ['completed', 'pending']) {
     const handle = await ctx.sessionPersistence.create({ id, version: 4, createdAt: Date.now(), cwd: source, isSeeded: false, delegationDepth: 0 });
     if (id === 'pending') await handle.append([{ seq: 0, time: Date.now(), type: 'turn/start', data: { turn: 1 } }]);
+    else await handle.append([{ seq: 0, time: Date.now(), type: 'acceptance/attachment', ignorable: true, data: {
+      ref: { attachmentId: 'sha256:' + hash, mediaType: 'image/png', bytes: image.length, width: 1, height: 1 },
+    } }]);
     await handle.flush(); await handle.close();
   }
 } finally { await ctx.fiber.dispose(); }

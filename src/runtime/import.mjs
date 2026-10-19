@@ -3,6 +3,7 @@ import path from 'node:path';
 import { load, dump, JSON_SCHEMA } from 'js-yaml';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
+import { createHash } from 'node:crypto';
 
 async function exists(file) {
   try { await fs.access(file); return true; }
@@ -25,9 +26,11 @@ async function copyHistory(source, target, report, onlyIds) {
   const { Context } = await import('@deepseek-ai/cordis');
   const persistence = await import(pathToFileURL(base.resolve('@deepseek-ai/dsh-session-persistence-jsonl')));
   const { SessionPersistenceCorruptionError, SessionFormatUnsupportedError, SessionPersistenceNotFoundError } = await import(pathToFileURL(base.resolve('@deepseek-ai/dsh-session-persistence')));
+  const attachments = await import(pathToFileURL(base.resolve('@deepseek-ai/dsh-attachment-local')));
   const context = new Context();
   try {
     await context.plugin(persistence, { root, compression: 'zstd' }).await();
+    await context.plugin(attachments.default, { dshHome: source }).await();
     const storage = context.sessionPersistence;
     const found = new Set();
     for (const snapshot of await storage.list()) {
@@ -59,6 +62,7 @@ async function copyHistory(source, target, report, onlyIds) {
           files.push([file.name, await fs.readFile(path.join(originalDir, file.name))]);
         }
         if ((await storage.stat(id)).revision !== snapshot.revision) { item.code = 'SOURCE_CHANGED'; continue; }
+        await copyReferencedAttachments(events, source, target, report, context.attachments);
         await fs.mkdir(target, { recursive: true });
         const temporary = await fs.mkdtemp(path.join(target, '.session-import-'));
         let committed = false;
@@ -71,8 +75,8 @@ async function copyHistory(source, target, report, onlyIds) {
         }
         report.historyFiles += files.length; report.historySessions++;
       } catch (error) {
-        if (!(error instanceof SessionPersistenceCorruptionError || error instanceof SessionFormatUnsupportedError || error instanceof SessionPersistenceNotFoundError || error.code === 'ENOENT')) throw error;
-        item.code = 'INVALID_SESSION_LOG';
+        if (!(error instanceof SessionPersistenceCorruptionError || error instanceof SessionFormatUnsupportedError || error instanceof SessionPersistenceNotFoundError || error.code === 'ENOENT' || error.code === 'DSH_IMPORT_ATTACHMENT_INVALID')) throw error;
+        item.code = error.code === 'DSH_IMPORT_ATTACHMENT_INVALID' || error.code === 'ENOENT' ? 'ATTACHMENT_OR_LOG_UNAVAILABLE' : 'INVALID_SESSION_LOG';
       } finally {
         await handle?.close();
         if (item.code) report.skipped.push(item);
@@ -82,18 +86,23 @@ async function copyHistory(source, target, report, onlyIds) {
   } finally { await context.fiber.dispose(); }
 }
 
-async function copyAttachments(source, target, report) {
-  const folder = 'attachments/v1', root = path.join(source, folder);
-  if (!await exists(root)) return;
-  for (const entry of await fs.readdir(root, { recursive: true, withFileTypes: true })) {
-    if (entry.isDirectory()) continue;
-    const original = path.join(entry.parentPath, entry.name), relative = path.relative(root, original);
-    if (!entry.isFile()) { report.skipped.push({ file: path.join(folder, relative), code: 'LINK_NOT_IMPORTED' }); continue; }
-    const destination = path.join(target, folder, relative);
+async function copyReferencedAttachments(events, source, target, report, store) {
+  const refs = [];
+  function collect(value) {
+    if (!value || typeof value !== 'object') return;
+    if (typeof value.attachmentId === 'string') refs.push(value);
+    else for (const child of Object.values(value)) collect(child);
+  }
+  collect(events);
+  const root = path.join(source, 'attachments/v1');
+  for (const ref of refs) {
+    const original = ref.mediaType ? store.imageHostPath(ref) : store.fileHostPath(ref);
+    const relative = path.relative(root, original);
+    const destination = path.join(target, 'attachments/v1', relative);
     if (await exists(destination)) continue;
-    const before = await fs.stat(original), content = await fs.readFile(original), after = await fs.stat(original);
-    if (before.size !== after.size || before.mtimeMs !== after.mtimeMs) {
-      report.skipped.push({ file: path.join(folder, relative), code: 'SOURCE_CHANGED' }); continue;
+    const content = await fs.readFile(original);
+    if (ref.attachmentId !== 'sha256:' + createHash('sha256').update(content).digest('hex')) {
+      throw Object.assign(new Error('Invalid source attachment'), { code: 'DSH_IMPORT_ATTACHMENT_INVALID' });
     }
     await fs.mkdir(path.dirname(destination), { recursive: true });
     await fs.writeFile(destination, content, { flag: 'wx' }); report.attachmentFiles++;
@@ -109,7 +118,6 @@ export async function importDesktopData(source, home) {
     if (retry.size) {
       report.skipped = report.skipped.filter(item => !retry.has(item.id));
       await copyHistory(source, home, report, retry);
-      await copyAttachments(source, home, report);
       await fs.writeFile(marker, JSON.stringify(report, null, 2));
     }
     return report;
@@ -157,7 +165,6 @@ export async function importDesktopData(source, home) {
   await fs.mkdir(path.join(profile, '.dsh-workbuddy-connect'));
   await fs.writeFile(path.join(profile, '.dsh-workbuddy-connect/settings.json'), JSON.stringify({ ...preferences, autoCheckInCN: false, autoCheckInAI: false }));
   await copyHistory(source, staging, report);
-  await copyAttachments(source, staging, report);
   await fs.writeFile(path.join(staging, 'migration.json'), JSON.stringify(report, null, 2));
   await fs.rename(staging, home);
   return report;
