@@ -5,7 +5,7 @@ const { randomBytes, createHmac } = require('node:crypto');
 const { DesktopConnection } = require('../dist/test/desktop/connection');
 const listen = server => new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve(server.address().port)));
 const close = server => new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
-async function fixture(t) {
+async function fixture(t, failInitialDiscovery = false) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-companion-test-'));
   const credentialsPath = path.join(directory, 'credentials.yaml');
   let secret = randomBytes(32), discoveries = 0, prompts = 0, unauthorized = false;
@@ -30,7 +30,11 @@ async function fixture(t) {
     socket.on('end', () => socket.destroy());
   });
   let port = await listen(server);
-  const connection = new DesktopConnection({ credentialsPath, assetsDirectory: path.resolve('dist'), discover: async () => { discoveries++; return [{ pid: 42, port }]; } });
+  const connection = new DesktopConnection({ credentialsPath, assetsDirectory: path.resolve('dist'), discover: async () => {
+    discoveries++;
+    if (failInitialDiscovery) { failInitialDiscovery = false; throw new Error('DSH_START_TIMEOUT'); }
+    return [{ pid: 42, port }];
+  } });
   t.after(async () => { await connection.dispose(); server.closeAllConnections(); await close(server); await fs.rm(directory, { recursive: true, force: true }); });
   return { connection, server, get discoveries() { return discoveries; }, get prompts() { return prompts; }, set unauthorized(value) { unauthorized = value; },
     async rotateSecret() { secret = randomBytes(32); await writeSecret(); },
@@ -73,4 +77,12 @@ test('authenticated websocket upgrade preserves bidirectional stream', async t =
     socket.on('connect', () => socket.write(`GET /events HTTP/1.1\r\nHost: ${base.host}\r\nOrigin: ${base.origin}\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n`));
     socket.on('data', bytes => { body += bytes; if (!upgraded && body.includes('\r\n\r\n')) { assert.match(body, /101 Switching Protocols/); upgraded = true; body = ''; socket.write('ping'); } else if (body === 'ping') { socket.destroy(); resolve(); } });
   });
+});
+test('a failed background preparation stays visible and an explicit retry can recover', async t => {
+  const f = await fixture(t, true);
+  const failures = await Promise.allSettled([f.connection.start(), f.connection.start()]);
+  assert.equal(f.discoveries, 1);
+  for (const failure of failures) { assert.equal(failure.status, 'rejected'); assert.match(failure.reason.message, /DSH_START_TIMEOUT/); }
+  const base = await f.connection.start(); assert.equal(f.discoveries, 2);
+  assert.equal(await (await fetch(base + '/api/test')).text(), 'api-ok');
 });

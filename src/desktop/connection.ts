@@ -5,7 +5,7 @@ import * as os from 'node:os';
 import { createHash, createHmac } from 'node:crypto';
 import { Duplex } from 'node:stream';
 import { load, JSON_SCHEMA, YAMLException } from 'js-yaml';
-import { DesktopCandidate, discoverWindowsDesktop } from './discovery';
+import { DesktopCandidate, ensureWindowsDesktop } from './discovery';
 
 interface Options {
   credentialsPath?: string;
@@ -27,7 +27,7 @@ export class DesktopConnection {
   private readonly discover: () => Promise<DesktopCandidate[]>;
   private readonly credentialsPath: string;
   constructor(private readonly options: Options) {
-    this.discover = options.discover || discoverWindowsDesktop;
+    this.discover = options.discover || ensureWindowsDesktop;
     this.credentialsPath = options.credentialsPath || path.join(os.homedir(), '.dsh', '.credentials.yaml');
   }
 
@@ -78,7 +78,7 @@ export class DesktopConnection {
 
   private async findTarget(): Promise<Target> {
     const candidates = await this.discover();
-    if (candidates.length === 0) throw new Error('桌面版 DSH 未运行，请打开已有桌面应用后重新连接');
+    if (candidates.length === 0) throw new Error('DSH 后台尚未就绪，请重新连接以重试自动启动');
     let text: string;
     try { text = await fs.readFile(this.credentialsPath, 'utf8'); }
     catch (error) {

@@ -8,6 +8,14 @@ The implementation was also checked against the real running desktop DSH GUI thr
 
 Measured first connection discovery/probe was about 2.1 seconds. Subsequent real root requests took 26/4/2ms. The previous prototype's ~2.5 second recurring process scan is removed from healthy request forwarding. In the GUI harness, the input was empty on the first sampled frame at 20ms; it restored after the intentional failure. Reference serialization was 0.8ms. These measurements are not an end-to-end VS Code input-freeze reproduction, and do not measure model first-token latency or large-file behavior.
 
-Actual target versions: Windows, VS Code 1.124.2, desktop DSH 0.2.1-rc.2. No model call, desktop config mutation or backend installation/start is part of these tests. Native desktop updates and other VS Code versions remain compatibility work rather than verified support.
+Actual target versions: Windows, VS Code 1.124.2, desktop DSH 0.2.1-rc.2. The original reference/proxy tests do not start a backend. The opt-in startup checks below start the existing installed application, without installing another runtime, modifying desktop configuration or calling a model. Native desktop updates and other VS Code versions remain compatibility work rather than verified support.
 
 The final 12 automated checks also cover multiple manual references queued before readiness, no duplicate delivery on repeated ready messages, and exclusion of stale file-read replies from replacement pages. The native Webview test exposed and fixed a source-filter bug: VS Code replaces window.parent; host messages are checked against the webview origin rather than parent/source identity. Both Standards and Spec reviews were completed against implementation-baseline. All confirmed review findings were repaired; the obsolete test debug injection was removed.
+
+## Automatic background startup (0.2.0)
+
+With desktop DSH fully exited, run `npm run build` then `node tests/windows-startup.cjs`. This opt-in Windows check starts the real installed application hidden and later opens its desktop window to verify native single-instance reuse. It leaves the shared background running and never stops a user-owned application. It is intentionally excluded from `npm test`.
+
+The real cold-start run completed in 5688ms for two concurrent connection objects, each running its own PowerShell preparation process. Both connected to one backend and the shell's MainWindowHandle remained zero until the desktop-open step. Opening desktop afterwards produced a visible window while retaining the exact backend PID. A further plugin connection after desktop was open retained that same PID as well. Disposing all plugin proxies and reconnecting also preserved the backend.
+
+The existing desktop profile's cordis.patch.yml, package.json and pnpm-workspace.yaml hashes, and the complete set of historical session directory IDs, were unchanged. No fixture prompt or model request was sent. This verifies normal startup for the installed Windows release; account-expiry/update dialogs and other desktop versions were not exercised.

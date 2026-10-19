@@ -74,7 +74,7 @@ export class SidebarView implements vscode.WebviewViewProvider, vscode.Disposabl
     } catch (error) {
       if (generation !== this.generation) return;
       const message = (error as Error).message.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-      view.webview.html = `<!doctype html><html lang="zh-CN"><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none';style-src 'unsafe-inline'"><style>body{padding:24px;background:var(--vscode-sideBar-background);color:var(--vscode-foreground);font:var(--vscode-font-size) var(--vscode-font-family);line-height:1.8}</style><p>${message}</p><p>打开已有桌面 DSH 后，点击侧栏标题的重新连接按钮。</p></html>`;
+      view.webview.html = `<!doctype html><html lang="zh-CN"><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none';style-src 'unsafe-inline'"><style>body{padding:24px;background:var(--vscode-sideBar-background);color:var(--vscode-foreground);font:var(--vscode-font-size) var(--vscode-font-family);line-height:1.8}</style><p>${message}</p><p>检查 DSH 安装与启动权限后，点击侧栏标题的重新连接按钮重试。插件会自动准备后台，无需手动打开桌面窗口。</p></html>`;
     }
   }
 
