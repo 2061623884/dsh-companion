@@ -1,0 +1,107 @@
+body[data-dsh-companion] {
+  margin: 0; overflow: hidden;
+  background: var(--dsh-companion-background) !important;
+  color: var(--dsh-companion-foreground) !important;
+  font-family: var(--dsh-companion-fontFamily) !important;
+  font-size: var(--dsh-companion-fontSize) !important;
+}
+body[data-dsh-companion] [data-dsh-companion-frame] {
+  grid-template-columns: 0 minmax(0, 1fr) 0 !important;
+  box-sizing: border-box; padding-top: 36px; height: 100%;
+  background: var(--dsh-companion-background) !important;
+}
+body[data-dsh-companion] [data-dsh-companion-navigation] {
+  position: absolute; inset: 36px 0 0; width: 100%; z-index: 30;
+  border: 0; background: var(--dsh-companion-background) !important;
+}
+body[data-dsh-companion] [data-sidebar-collapsed] [data-dsh-companion-navigation] { display: none; }
+body[data-dsh-companion] [data-dsh-companion-navigation] > [data-slot="sidebar"] > * { width: 100% !important; box-sizing: border-box; }
+body[data-dsh-companion] [data-dsh-companion-frame] > [data-side] { display: none; }
+body[data-dsh-companion] [data-dsh-companion-center] { grid-column: 2; grid-row: 1; min-width: 0; background: var(--dsh-companion-background) !important; }
+body[data-dsh-companion] [data-rightbar-col] { grid-column: 3; grid-row: 1; }
+body[data-dsh-companion] [data-sidebar-right-expand] { display: none !important; }
+body[data-dsh-companion] [data-slot="sidebar.brand.mark"],
+body[data-dsh-companion] [data-slot="sidebar.brand.name"] { display: none; }
+#dsh-companion-toolbar {
+  position: fixed; inset: 0 0 auto; height: 36px; box-sizing: border-box;
+  display: flex; align-items: center; gap: 2px; padding: 0 6px; z-index: 50;
+  border-bottom: 1px solid var(--dsh-companion-border); background: var(--dsh-companion-background);
+}
+#dsh-companion-toolbar button, #dsh-companion-menu button {
+  color: inherit; background: transparent; border: 1px solid transparent;
+  border-radius: 3px; padding: 4px 7px; font: inherit; line-height: 20px; cursor: pointer; white-space: nowrap;
+}
+#dsh-companion-toolbar button:hover, #dsh-companion-menu button:hover { background: var(--dsh-companion-hover); }
+#dsh-companion-toolbar button[aria-expanded="true"] { background: var(--dsh-companion-hover); }
+#dsh-companion-toolbar .dsh-companion-icon-button {
+  display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0;
+}
+.dsh-companion-icon { width: 16px; height: 16px; flex: none; }
+#dsh-companion-context { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; padding-bottom: 6px; font-size: 12px; }
+#dsh-companion-context:not(:has(> button:not([hidden]))) { display: none; }
+#dsh-companion-context button { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px solid var(--dsh-companion-border); border-radius: 4px; background: transparent; color: var(--dsh-companion-foreground); font: inherit; padding: 3px 6px; cursor: pointer; }
+#dsh-companion-context button:hover { background: var(--dsh-companion-hover); }
+#dsh-companion-context button[hidden] { display: none; }
+body[data-dsh-companion] [data-composer-chip="vscode-editor"] { display: inline-flex; align-items: baseline; max-width: 100%; vertical-align: baseline; }
+body[data-dsh-companion] [data-composer-chip="vscode-editor"] > span { min-width: 0; }
+.dsh-companion-reference-close { display: inline-flex; align-items: center; justify-content: center; align-self: center; flex: none; order: 1; width: 18px; height: 18px; padding: 2px; margin-left: 2px; border: 0; border-radius: 3px; background: transparent; color: var(--dsh-companion-foreground); cursor: pointer; }
+.dsh-companion-reference-close svg { width: 12px; height: 12px; }
+.dsh-companion-reference-close:hover { background: var(--dsh-companion-hover); }
+.dsh-companion-reference-close:focus-visible { outline: 1px solid var(--dsh-companion-focus); outline-offset: -1px; }
+.dsh-companion-reference-close:disabled { opacity: .5; cursor: default; }
+#dsh-companion-toolbar button:focus-visible, #dsh-companion-menu button:focus-visible { outline: 1px solid var(--dsh-companion-focus); outline-offset: -1px; }
+#dsh-companion-toolbar [hidden], #dsh-companion-menu[hidden] { display: none; }
+.dsh-companion-spacer { flex: 1; }
+#dsh-companion-menu {
+  position: fixed; top: 36px; right: 6px; z-index: 60; width: min(220px, calc(100% - 12px));
+  padding: 4px; box-sizing: border-box; background: var(--dsw-specific-menu);
+  color: var(--dsh-companion-foreground); border: 1px solid var(--dsh-companion-border); border-radius: 6px;
+}
+#dsh-companion-menu button { display: flex; align-items: center; gap: 10px; width: 100%; height: 34px; padding: 0 8px; text-align: left; }
+body[data-dsh-companion] [data-conversation-content] {
+  --dsh-chat-content-width: 100%; --dsh-composer-card-max-width: 100%; --dsh-composer-side-clearance: 0px;
+}
+body[data-dsh-companion] [data-composer-seat] {
+  padding: 8px !important; min-width: 0; margin-top: auto !important;
+  position: sticky; bottom: 0; z-index: 4; background: var(--dsh-companion-background);
+}
+body[data-dsh-companion] [data-composer-seat] [class*="_composerHero"] { padding-bottom: 0 !important; }
+body[data-dsh-companion] [data-composer-seat] [class*="_composerHero"] > :first-child { display: none; }
+body[data-dsh-companion] [data-composer-card] { border: 1px solid var(--dsh-companion-border); background: var(--dsh-companion-inputBackground) !important; }
+body[data-dsh-companion] [data-composer-input] { max-height: min(220px, 32vh) !important; overflow-y: auto; color: var(--dsh-companion-inputForeground); }
+body[data-dsh-companion] [data-composer-dock] { min-width: 0; }
+body[data-dsh-companion] [data-composer-card] [class*="footer"],
+body[data-dsh-companion] [data-composer-card] [class*="Footer"] { flex-wrap: wrap; gap: 4px; }
+body[data-dsh-companion] [data-conversation-scroll] { justify-content: flex-start !important; overscroll-behavior: contain; min-width: 0; }
+body[data-dsh-companion] [data-slot="conversation.chat.flow"] { padding-inline: 12px !important; min-width: 0; }
+body[data-dsh-companion] [data-chat-anchor-key] { min-width: 0; overflow-wrap: anywhere; }
+body[data-dsh-companion] pre { max-width: 100%; overflow-x: auto; overflow-wrap: normal; }
+body[data-dsh-companion] code, body[data-dsh-companion] pre { font-family: var(--dsh-companion-codeFontFamily) !important; }
+body[data-dsh-companion] table { display: block; max-width: 100%; overflow-x: auto; }
+body[data-dsh-companion] [data-sidebar-right-panel][data-sidebar-right-open] {
+  position: fixed !important; inset: 36px 0 0 !important; width: 100% !important;
+  max-width: 100%; height: calc(100% - 36px); z-index: 35;
+}
+body[data-dsh-companion] [data-dsh-companion-settings-overlay] { top: 36px; }
+body[data-dsh-companion] [data-dsh-companion-settings] {
+  position: fixed !important; inset: 36px 0 0 !important;
+  width: 100% !important; max-width: 100% !important; height: calc(100% - 36px) !important;
+  max-height: none !important; min-width: 0 !important; border-radius: 0 !important;
+  display: flex !important; flex-direction: column !important; transform: none !important;
+}
+body[data-dsh-companion] [data-dsh-companion-settings] > nav {
+  flex-direction: row !important; display: flex !important; flex-wrap: wrap;
+  width: 100% !important; min-width: 0 !important; max-height: 130px; overflow: auto; padding: 6px !important;
+  border-right: 0 !important; border-bottom: 1px solid var(--dsh-companion-border);
+}
+body[data-dsh-companion] [data-dsh-companion-settings] > nav > * { flex-shrink: 0; }
+body[data-dsh-companion] [data-dsh-companion-settings] > nav { gap: 4px; }
+body[data-dsh-companion] [data-dsh-companion-settings] > nav > :last-child {
+  display: flex; flex-direction: row; flex-wrap: wrap; gap: 2px; min-width: 0; flex: 1;
+}
+body[data-dsh-companion] [data-dsh-companion-settings] > nav button { padding: 6px 8px; height: 32px; }
+body[data-dsh-companion] [data-dsh-companion-settings] > div { min-width: 0 !important; width: 100%; flex: 1; }
+body[data-dsh-companion] [role="dialog"], body[data-dsh-companion] [role="menu"],
+body[data-dsh-companion] [role="listbox"] { max-width: calc(100vw - 12px); box-sizing: border-box; }
+body[data-dsh-companion] :focus-visible { outline-color: var(--dsh-companion-focus) !important; }
+body[data-dsh-companion-contrast] button, body[data-dsh-companion-contrast] input { border-color: var(--dsh-companion-border) !important; }

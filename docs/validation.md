@@ -1,0 +1,11 @@
+# Validation
+
+Run `npm run check` and `npm test`. The tests cover cancellation across document edits, new ranges on the same line, selection snapshots versus current whole-file buffers, preservation of manual references/text, pending submission and failure restoration, aborted serialization, diagnostic redaction, single-flight discovery, healthy idle reuse, dynamic ports, rotated credentials, HTTP/SSE and authenticated WebSocket forwarding. Failed POST requests must reach the backend exactly once.
+
+For native SDK integration, create an ignored `.test-work/fixtures.code-workspace` containing two folders `a` and `b`, each with `main.py`. Then launch VS Code with this checkout as `--extensionDevelopmentPath`, `tests/native-runner.cjs` as `--extensionTestsPath`, isolated `--user-data-dir` and `--extensions-dir`, and that workspace. The runner checks real editor APIs, unsaved selection, active-file workspace, focus retention, file-read authorization and the host handler. Its bridge transport is injected; this alone does not prove browser-to-extension transport performance.
+
+The implementation was also checked against the real running desktop DSH GUI through an HTTP integration harness using a simulated editor. The harness intercepts `/api/session/prompt` locally and returns an intentional HTTP 503, so no model is called. It verifies selected content rather than full-file content is submitted, draft restoration, removable references, cancellation across edits, new ranges and theme propagation at 400px without horizontal page overflow.
+
+Measured first connection discovery/probe was about 2.1 seconds. Subsequent real root requests took 26/4/2ms. The previous prototype's ~2.5 second recurring process scan is removed from healthy request forwarding. In the GUI harness, the input was empty on the first sampled frame at 20ms; it restored after the intentional failure. Reference serialization was 0.8ms. These measurements are not an end-to-end VS Code input-freeze reproduction, and do not measure model first-token latency or large-file behavior.
+
+Actual target versions: Windows, VS Code 1.124.2, desktop DSH 0.2.1-rc.2. No model call, desktop config mutation or backend installation/start is part of these tests. Native desktop updates and other VS Code versions remain compatibility work rather than verified support.

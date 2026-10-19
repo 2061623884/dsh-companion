@@ -8,3 +8,4 @@ tsconfig.json
 build.mjs
 package-lock.json
 .gitignore
+dist/test/**
