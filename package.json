@@ -3,6 +3,14 @@
   "displayName": "DSH Companion",
   "description": "Connect an existing desktop DeepSeek Harness to the VS Code right sidebar with automatic code context.",
   "version": "0.2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/2061623884/dsh-companion.git"
+  },
+  "homepage": "https://github.com/2061623884/dsh-companion#readme",
+  "bugs": {
+    "url": "https://github.com/2061623884/dsh-companion/issues"
+  },
   "publisher": "local-development",
   "license": "MIT",
   "private": true,
