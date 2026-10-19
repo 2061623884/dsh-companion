@@ -109,8 +109,14 @@ async function copyReferencedAttachments(events, source, target, report, store) 
     }
     await fs.mkdir(path.dirname(destination), { recursive: true });
     const temporary = destination + '.import-' + randomUUID();
-    await fs.writeFile(temporary, content, { flag: 'wx' });
-    await fs.rename(temporary, destination); report.attachmentFiles++;
+    let committed = false;
+    try {
+      await fs.writeFile(temporary, content, { flag: 'wx' });
+      await fs.rename(temporary, destination); committed = true;
+    } finally {
+      if (!committed) await fs.rm(temporary, { force: true });
+    }
+    report.attachmentFiles++;
   }
 }
 
