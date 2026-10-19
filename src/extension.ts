@@ -1,12 +1,13 @@
 import * as vscode from 'vscode';
 import * as path from 'node:path';
-import { DesktopConnection } from './desktop/connection';
+import { RuntimeConnection } from './runtime/connection';
 import { EditorContext } from './context/editor-context';
 import { SidebarView } from './sidebar/view';
 
 export function activate(context: vscode.ExtensionContext): void {
   const log = vscode.window.createOutputChannel('DSH Companion');
-  const connection = new DesktopConnection({ assetsDirectory: path.join(context.extensionPath, 'dist') });
+  const connection = new RuntimeConnection({ assetsDirectory: path.join(context.extensionPath, 'dist'),
+    dataHome: path.join(context.globalStorageUri.fsPath, 'dsh'), runtimeDirectory: path.join(context.extensionPath, 'runtime') });
   const editor = new EditorContext();
   const view = new SidebarView(context.extensionPath, connection, editor, log);
   context.subscriptions.push(log, editor, view,

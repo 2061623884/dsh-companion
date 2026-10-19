@@ -2,11 +2,11 @@
 
 The narrow sidebar UI adapter, CSS, bootstrap integration and whale path were derived from the user's customized **DeepSeek Harness for VSCode**, publisher **Vithrive**, original package `vithrive.deepseek-harness-vscode` 1.0.0. Its included license is MIT, copyright 2026 dsh-vscode-panel contributors. That notice is retained in `LICENSE`. The independent project reorganizes and extends the integration; it does not claim exclusive authorship of those parts.
 
-The DeepSeek name and whale mark belong to their respective owners and are used to identify the desktop application being connected. An MIT source license does not grant trademark rights. No official affiliation is implied.
+The DeepSeek name and whale mark belong to their respective owners and are used to identify DeepSeek Harness integration. An MIT source license does not grant trademark rights. No official affiliation is implied.
 
-`js-yaml` is distributed under the MIT license. Its complete copyright and license notice follow below. Node development dependencies retain their own licenses; they are not bundled into the extension runtime.
+`js-yaml` is distributed under the MIT license. Its complete copyright and license notice follow below. Development dependencies retain their own licenses. Bundled runtime dependencies are listed in runtime/package-lock.json and runtime/licenses.json, with their license files retained inside runtime/node_modules.
 
-Desktop DSH frontend/runtime code, account configuration, credentials, model-provider plugins and conversation data are **not** distributed with this project. The extension connects to the user's existing installation.
+The VSIX bundles public DeepSeek Harness 0.2.1-rc.2 packages (MIT), WorkBuddy Connect 0.6.10 from public Git commit 4738217d156c46f088d424dedc83a66e7308f64a (MIT), pnpm and Node 24.21.0. Their original notices remain in runtime/node_modules and runtime/bin/NODE-LICENSE. No private desktop Host or Electron application is copied. Account configuration, credentials and conversation data are never included in the VSIX or source archive.
 
 ## js-yaml license
 

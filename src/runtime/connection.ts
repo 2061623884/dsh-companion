@@ -1,22 +1,23 @@
 import * as http from 'node:http';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import * as os from 'node:os';
 import { createHash, createHmac } from 'node:crypto';
 import { Duplex } from 'node:stream';
 import { load, JSON_SCHEMA, YAMLException } from 'js-yaml';
-import { DesktopCandidate, ensureWindowsDesktop } from './discovery';
+import { RuntimeClient, RuntimeAddress } from '../runtime/client';
 
 interface Options {
   credentialsPath?: string;
-  discover?: () => Promise<DesktopCandidate[]>;
+  acquire?: () => Promise<RuntimeAddress>;
+  dataHome: string;
+  runtimeDirectory: string;
   assetsDirectory: string;
 }
 interface Target { url: URL; secret: Buffer; pid: number }
 const hopHeaders = ['connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailer', 'transfer-encoding', 'upgrade'];
 
-/** A stable loopback endpoint; a healthy request never performs desktop discovery. */
-export class DesktopConnection {
+/** A stable loopback endpoint; a healthy request never performs runtime discovery. */
+export class RuntimeConnection {
   private target: Target | null = null;
   private finding: Promise<Target> | null = null;
   private starting: Promise<string> | null = null;
@@ -24,11 +25,13 @@ export class DesktopConnection {
   private baseUrl = '';
   private closed = false;
   private readonly sockets = new Set<Duplex>();
-  private readonly discover: () => Promise<DesktopCandidate[]>;
+  private readonly acquire: () => Promise<RuntimeAddress>;
+  private readonly runtime: RuntimeClient | undefined;
   private readonly credentialsPath: string;
   constructor(private readonly options: Options) {
-    this.discover = options.discover || ensureWindowsDesktop;
-    this.credentialsPath = options.credentialsPath || path.join(os.homedir(), '.dsh', '.credentials.yaml');
+    this.runtime = options.acquire ? undefined : new RuntimeClient(options.runtimeDirectory, options.dataHome);
+    this.acquire = options.acquire || (() => this.runtime!.acquire());
+    this.credentialsPath = options.credentialsPath || path.join(options.dataHome, '.credentials.yaml');
   }
 
   start(): Promise<string> {
@@ -77,25 +80,23 @@ export class DesktopConnection {
   }
 
   private async findTarget(): Promise<Target> {
-    const candidates = await this.discover();
-    if (candidates.length === 0) throw new Error('DSH 后台尚未就绪，请重新连接以重试自动启动');
+    const candidate = await this.acquire();
     let text: string;
     try { text = await fs.readFile(this.credentialsPath, 'utf8'); }
     catch (error) {
       const code = (error as NodeJS.ErrnoException).code;
       if (!code) throw error;
-      throw new Error(`无法读取桌面认证文件 (${code})`);
+      throw new Error(`无法读取运行时认证文件 (${code})`);
     }
     let credentials: unknown;
     try { credentials = load(text, { schema: JSON_SCHEMA }); }
-    catch (error) { if (error instanceof YAMLException) throw new Error('桌面认证文件格式无效 (CREDENTIAL_PARSE)'); throw error; }
+    catch (error) { if (error instanceof YAMLException) throw new Error('运行时认证文件格式无效 (CREDENTIAL_PARSE)'); throw error; }
     const record = (credentials as { records?: Record<string, { kind?: string; payload?: { version?: number; secret?: string } }> })?.records?.['client-connection/browser-session'];
     const secret = record?.payload?.secret;
     if (record?.kind !== 'grant' || record.payload?.version !== 1 || typeof secret !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(secret)) {
-      throw new Error('桌面浏览器认证记录无效 (CREDENTIAL_SCHEMA)');
+      throw new Error('运行时浏览器认证记录无效 (CREDENTIAL_SCHEMA)');
     }
-    const matches: Target[] = [];
-    for (const candidate of candidates) {
+    {
       const target = { url: new URL(`http://127.0.0.1:${candidate.port}`), pid: candidate.pid, secret: Buffer.from(secret, 'base64url') };
       const valid = await new Promise<boolean>((resolve, reject) => {
         const request = http.get(target.url, { headers: { cookie: this.cookie(target, target.url.host) } }, response => {
@@ -104,12 +105,11 @@ export class DesktopConnection {
           response.on('end', () => resolve(response.statusCode === 200 && html.includes('__ModuleLoader__')));
           response.on('error', reject);
         });
-        request.on('error', reject); request.setTimeout(3000, () => request.destroy(new Error('桌面端口探测超时')));
+        request.on('error', reject); request.setTimeout(3000, () => request.destroy(new Error('运行时端口探测超时')));
       });
-      if (valid) matches.push(target);
+      if (!valid) throw new Error('DSH 运行时认证失败 (RUNTIME_AUTH_FAILED)');
+      return target;
     }
-    if (matches.length !== 1) throw new Error(matches.length ? '检测到多个桌面 DSH，请只保留需要连接的实例' : '桌面 DSH 尚未就绪或认证失败');
-    return matches[0];
   }
 
   private cookie(target: Target, authority: string): string {
@@ -165,7 +165,7 @@ export class DesktopConnection {
         }
         incoming.on('error', reject);
       });
-      upstream.on('error', error => { if (this.target === target) this.target = null; reject(new Error(`桌面连接失败 (${(error as NodeJS.ErrnoException).code || 'HTTP_ERROR'})，请重新连接`)); });
+      upstream.on('error', error => { if (this.target === target) this.target = null; reject(new Error(`运行时连接失败 (${(error as NodeJS.ErrnoException).code || 'HTTP_ERROR'})，请重新连接`)); });
       request.on('aborted', () => upstream.destroy());
       response.on('close', () => { if (!response.writableEnded) upstream.destroy(); });
       request.pipe(upstream);
@@ -191,7 +191,7 @@ export class DesktopConnection {
   }
 
   async dispose(): Promise<void> {
-    this.closed = true; this.target = null;
+    this.closed = true; this.target = null; this.runtime?.dispose();
     for (const socket of this.sockets) socket.destroy();
     if (this.server) await new Promise<void>((resolve, reject) => this.server!.close(error => error ? reject(error) : resolve()));
     this.server = null;

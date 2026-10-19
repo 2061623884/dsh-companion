@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http'), net = require('node:net'), fs = require('node:fs/promises'), os = require('node:os'), path = require('node:path');
 const { randomBytes, createHmac } = require('node:crypto');
-const { DesktopConnection } = require('../dist/test/desktop/connection');
+const { RuntimeConnection } = require('../dist/test/runtime/connection');
 const listen = server => new Promise(resolve => server.listen(0, '127.0.0.1', () => resolve(server.address().port)));
 const close = server => new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
 async function fixture(t, failInitialDiscovery = false) {
@@ -30,10 +30,10 @@ async function fixture(t, failInitialDiscovery = false) {
     socket.on('end', () => socket.destroy());
   });
   let port = await listen(server);
-  const connection = new DesktopConnection({ credentialsPath, assetsDirectory: path.resolve('dist'), discover: async () => {
+  const connection = new RuntimeConnection({ credentialsPath, dataHome: directory, runtimeDirectory: directory, assetsDirectory: path.resolve('dist'), acquire: async () => {
     discoveries++;
     if (failInitialDiscovery) { failInitialDiscovery = false; throw new Error('DSH_START_TIMEOUT'); }
-    return [{ pid: 42, port }];
+    return { pid: 42, port };
   } });
   t.after(async () => { await connection.dispose(); server.closeAllConnections(); await close(server); await fs.rm(directory, { recursive: true, force: true }); });
   return { connection, server, get discoveries() { return discoveries; }, get prompts() { return prompts; }, set unauthorized(value) { unauthorized = value; },

@@ -10,3 +10,6 @@ package-lock.json
 .gitignore
 dist/test/**
 AGENTS.md
+
+scripts/**
+GLOSSARY.md

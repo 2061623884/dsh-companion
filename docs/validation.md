@@ -1,3 +1,11 @@
+# Current validation: 0.3.0
+
+Earlier desktop-sharing acceptance below is historical and superseded by docs/spec.md and ADR 0001.
+
+Verified in this implementation: bundled cold startup without desktop/system Node (6.4s on first run); real data import (66 completed sessions, 68 log generations and 2 attachment files; one pending/interrupted session skipped); HTTP 200 with adaptation injection; concurrent clients share one PID; last-client shutdown; fixture migration excludes OAuth/browser grants and startup work, preserves source configuration and does not resync settings. Native VS Code 1.124.2 checks passed for multi-root context, unsaved selection, latest buffer, retained focus, authorized reads and actual Webview bridge (179ms load plus roundtrip). No paid model calls.
+
+GUI send-feedback audit, desktop coexistence and final packaged installation are still being completed. Automated and native results will be recorded separately.
+
 # Validation
 
 Run `npm run check` and `npm test`. The tests cover cancellation across document edits, new ranges on the same line, selection snapshots versus current whole-file buffers, preservation of manual references/text, pending submission and failure restoration, aborted serialization, diagnostic redaction, single-flight discovery, healthy idle reuse, dynamic ports, rotated credentials, HTTP/SSE and authenticated WebSocket forwarding. Failed POST requests must reach the backend exactly once.

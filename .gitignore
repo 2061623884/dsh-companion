@@ -3,3 +3,6 @@ dist/
 .test-work/
 *.vsix
 *.log
+runtime/bin/
+runtime/host.mjs
+runtime/import.mjs
