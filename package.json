@@ -2,7 +2,7 @@
   "name": "dsh-companion",
   "displayName": "DSH Companion",
   "description": "Connect an existing desktop DeepSeek Harness to the VS Code right sidebar with automatic code context.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "local-development",
   "license": "MIT",
   "private": true,
@@ -24,7 +24,7 @@
     "build": "node build.mjs",
     "check": "tsc --noEmit",
     "test": "npm run build && node --test tests/*.test.cjs",
-    "package": "npm run check && npm run build && vsce package --allow-missing-repository --skip-license --out ../outputs/dsh-companion-0.1.1.vsix"
+    "package": "npm run check && npm run build && vsce package --allow-missing-repository --skip-license --out ../outputs/dsh-companion-0.1.2.vsix"
   },
   "contributes": {
     "viewsContainers": {

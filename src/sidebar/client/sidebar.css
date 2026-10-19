@@ -27,11 +27,11 @@ body[data-dsh-companion] [data-slot="sidebar.brand.name"] { display: none; }
   display: flex; align-items: center; gap: 2px; padding: 0 6px; z-index: 50;
   border-bottom: 1px solid var(--dsh-companion-border); background: var(--dsh-companion-background);
 }
-#dsh-companion-toolbar button, #dsh-companion-menu button {
+#dsh-companion-toolbar button {
   color: inherit; background: transparent; border: 1px solid transparent;
   border-radius: 3px; padding: 4px 7px; font: inherit; line-height: 20px; cursor: pointer; white-space: nowrap;
 }
-#dsh-companion-toolbar button:hover, #dsh-companion-menu button:hover { background: var(--dsh-companion-hover); }
+#dsh-companion-toolbar button:hover { background: var(--dsh-companion-hover); }
 #dsh-companion-toolbar button[aria-expanded="true"] { background: var(--dsh-companion-hover); }
 #dsh-companion-toolbar .dsh-companion-icon-button {
   display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0;
@@ -49,15 +49,9 @@ body[data-dsh-companion] [data-composer-chip="vscode-editor"] > span { min-width
 .dsh-companion-reference-close:hover { background: var(--dsh-companion-hover); }
 .dsh-companion-reference-close:focus-visible { outline: 1px solid var(--dsh-companion-focus); outline-offset: -1px; }
 .dsh-companion-reference-close:disabled { opacity: .5; cursor: default; }
-#dsh-companion-toolbar button:focus-visible, #dsh-companion-menu button:focus-visible { outline: 1px solid var(--dsh-companion-focus); outline-offset: -1px; }
-#dsh-companion-toolbar [hidden], #dsh-companion-menu[hidden] { display: none; }
+#dsh-companion-toolbar button:focus-visible { outline: 1px solid var(--dsh-companion-focus); outline-offset: -1px; }
+#dsh-companion-toolbar [hidden] { display: none; }
 .dsh-companion-spacer { flex: 1; }
-#dsh-companion-menu {
-  position: fixed; top: 36px; right: 6px; z-index: 60; width: min(220px, calc(100% - 12px));
-  padding: 4px; box-sizing: border-box; background: var(--dsw-specific-menu);
-  color: var(--dsh-companion-foreground); border: 1px solid var(--dsh-companion-border); border-radius: 6px;
-}
-#dsh-companion-menu button { display: flex; align-items: center; gap: 10px; width: 100%; height: 34px; padding: 0 8px; text-align: left; }
 body[data-dsh-companion] [data-conversation-content] {
   --dsh-chat-content-width: 100%; --dsh-composer-card-max-width: 100%; --dsh-composer-side-clearance: 0px;
 }

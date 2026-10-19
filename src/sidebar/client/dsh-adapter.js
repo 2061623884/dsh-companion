@@ -9,7 +9,6 @@ window.__ModuleLoader__.load({
     const icons = {
       history: '<circle cx="12" cy="12" r="8.5"/><path d="M12 6.5V12l3.5 2"/>',
       new: '<path d="M20.5 11.7a8.2 8.2 0 0 1-8.3 8.1 8.5 8.5 0 0 1-3.6-.8L3 21l1.9-5.4a8.2 8.2 0 1 1 15.6-3.9Z"/><path d="M12 8v7M8.5 11.5h7"/>',
-      more: '<circle cx="5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1" fill="currentColor" stroke="none"/>',
       plugins: '<path d="M9 4H5a1 1 0 0 0-1 1v4h2a2 2 0 0 1 0 4H4v6a1 1 0 0 0 1 1h4v-2a2 2 0 0 1 4 0v2h6a1 1 0 0 0 1-1v-6h-2a2 2 0 0 1 0-4h2V5a1 1 0 0 0-1-1h-6V2a2 2 0 0 0-4 0Z"/>',
       schedules: '<rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M7.5 3v4M16.5 3v4M3.5 10h17M8 14h3M8 17h6"/>',
       settings: '<path d="m9.5 3-.5 2a7 7 0 0 0-2 1.2L5 5.6 2.5 10l1.5 1.4a7 7 0 0 0 0 2.2L2.5 15 5 19.4l2-.6a7 7 0 0 0 2 1.2l.5 2h5l.5-2a7 7 0 0 0 2-1.2l2 .6 2.5-4.4-1.5-1.4a7 7 0 0 0 0-2.2l1.5-1.4L19 5.6l-2 .6A7 7 0 0 0 15 5l-.5-2Z"/><circle cx="12" cy="12.5" r="3"/>',
@@ -67,26 +66,18 @@ window.__ModuleLoader__.load({
         }, 'new', true);
         header.append(back, history, newSession);
         const spacer = document.createElement('span'); spacer.className = 'dsh-companion-spacer'; header.append(spacer);
-        const menu = document.createElement('div'); menu.id = 'dsh-companion-menu'; menu.hidden = true;
-        menu.setAttribute('role', 'menu');
         for (const [label, panel] of [['插件', 'plugins'], ['自动化任务', 'schedules']]) {
-          menu.append(button(label, () => { ctx.layout.closeRightbar(); ctx.layout.selectPanel(panel); closeNavigation(); setMenu(false); }, panel));
+          header.append(button(label, () => {
+            ctx.slots.entries('sidebar.settings')[0].store.create().actions.close();
+            ctx.layout.closeRightbar(); ctx.layout.selectPanel(panel); closeNavigation();
+          }, panel, true));
         }
-        menu.append(button('设置与账号', () => {
+        header.append(button('设置与账号', () => {
           ctx.layout.closeRightbar();
           closeNavigation();
-          setMenu(false);
           ctx.slots.entries('sidebar.settings')[0].store.create().actions.open();
-        }, 'settings'));
-        for (const item of menu.children) item.setAttribute('role', 'menuitem');
-        const more = button('更多操作', () => setMenu(menu.hidden), 'more', true);
-        more.setAttribute('aria-haspopup', 'menu'); more.setAttribute('aria-expanded', 'false');
-        header.append(more);
-        body.append(header, menu);
-        function setMenu(open) {
-          menu.hidden = !open; more.setAttribute('aria-expanded', String(open));
-          if (open) menu.firstElementChild.focus();
-        }
+        }, 'settings', true));
+        body.append(header);
 
         function button(label, action, icon, iconOnly = false) {
           const element = document.createElement('button');
@@ -314,21 +305,6 @@ window.__ModuleLoader__.load({
           }
         };
         body.addEventListener('click', selectSession);
-        const dismissMenu = event => {
-          if (!header.contains(event.target) && !menu.contains(event.target)) setMenu(false);
-        };
-        body.addEventListener('pointerdown', dismissMenu);
-        const onEscape = event => {
-          if (event.key === 'Escape' && !menu.hidden) { setMenu(false); more.focus(); }
-          if (event.target === more && event.key === 'ArrowDown') { event.preventDefault(); setMenu(true); }
-          else if (menu.contains(event.target)) {
-            const items = [...menu.children], index = items.indexOf(document.activeElement);
-            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-              event.preventDefault(); items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus();
-            } else if (event.key === 'Tab') setMenu(false);
-          }
-        };
-        body.addEventListener('keydown', onEscape);
         const onMessage = event => {
           if (event.source !== parent || event.data?.source !== HOST) return;
           if (event.data.type === 'editor-context') {
@@ -365,12 +341,11 @@ window.__ModuleLoader__.load({
         return () => {
           disposed = true;
           ++bindingSequence;
-          observer.disconnect(); cancelAnimationFrame(animation); offPanel(); offTheme(); offSessions(); offInput(); offReferenceSource(); offReferenceDisplay(); references.dispose(); contextBar.remove(); header.remove(); menu.remove(); css.remove();
+          observer.disconnect(); cancelAnimationFrame(animation); offPanel(); offTheme(); offSessions(); offInput(); offReferenceSource(); offReferenceDisplay(); references.dispose(); contextBar.remove(); header.remove(); css.remove();
           for (const close of body.querySelectorAll('.dsh-companion-reference-close')) close.remove();
           for (const finish of pendingReads.values()) finish(null, new Error('DSH 页面已关闭'));
           window.removeEventListener('message', onMessage);
-          body.removeEventListener('click', selectSession); body.removeEventListener('pointerdown', dismissMenu);
-          body.removeEventListener('keydown', onEscape);
+          body.removeEventListener('click', selectSession);
           delete body.dataset.dshCompanion;
         };
       }, 'VS Code: scoped sidebar layout and theme');
