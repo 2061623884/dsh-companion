@@ -1,0 +1,10 @@
+.git/**
+node_modules/**
+src/**
+tests/**
+docs/**
+.test-work/**
+tsconfig.json
+build.mjs
+package-lock.json
+.gitignore
