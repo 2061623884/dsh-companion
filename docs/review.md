@@ -1,5 +1,9 @@
 # Review: independent runtime 0.3.0
 
+## User-independent discovery and privacy hardening
+
+Standards and Spec reviewed baseline a58f610cc993a2d08abcd49b92758ba1c76ca744 through 39367f0 separately: zero actionable findings on each axis. The diff adds sensitive-file exclusions, documents user-derived discovery and provider adapter placement, and tests isolation between synthetic custom homes; no runtime behavior was changed or hypothetical authorization framework introduced. Affected tests passed. Secret/history/archive scans and their scope limits are recorded in docs/validation.md. No push or publication.
+
 ## Read-only WorkBuddy reuse: 0.3.3
 
 Standards and Spec reviewed the diff from fixed baseline 734fa697074e6de9fda8ab0dfb4618e1bc10e6f0 to implementation 79522ca independently. Each reported zero remaining actionable findings. Spec additionally checked native acceptance commit 66dca1d for unintended desktop writes/network operations and found none. All 23 automated checks and the installed native account/Webview acceptance passed; see docs/validation.md.
