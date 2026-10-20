@@ -1,4 +1,14 @@
-# Validation: 0.3.0
+# Validation: 0.3.1
+
+## Windows Webview confirmation regression (0.3.1)
+
+VS Code supplies a lowercase drive prefix in extension URI paths. With that spelling, the DSH package router and Node could load separate instances of module-scoped boot state. The real Webview's preview acknowledgement returned HTTP 200 with business failure `settings/rejected`: `dsh: profile reload requires the root Include entry`. A direct shell launch using an uppercase drive prefix had hidden this failure in 0.3.0 acceptance.
+
+RuntimeClient now resolves the runtime directory with the native filesystem realpath before choosing the Node executable, host entry, manifest and working directory. It preserves one module identity without patching upstream code, bypassing the notice, or editing desktop data. A new regression test first reproduced the failure and then passed, including persistence across runtime restart. The opt-in tests/native-welcome.cjs drives the actual notice button in a real VS Code Webview and checks both modal dismissal and saved Host settings. The fixed native run measured backend readiness at 2,841ms, notice visibility 703ms after frame bootstrap and dismissal 297ms after clicking.
+
+Startup phase sampling with real source history measured approximately 1.29s for first migration and 2.71s for core boot. One earlier cold run took 25.05s before readiness; this was not stable across repeats, and its additional delay has not been attributed to a specific cause. In a five-run empty-home comparison, startup without Node compile cache was 2,515/2,487ms, versus 2,639ms for first cache use and 2,587/2,573ms with a populated cache. Compile caching was therefore not added. These local runs do not establish a worst-case startup limit or show that every slow opening has been eliminated.
+
+## Independent runtime acceptance (0.3.0)
 
 Validated on Windows x64 with VS Code 1.124.2. The packaged core is DSH 0.2.1-rc.2, WorkBuddy 0.6.10 at the recorded public commit, and Node 24.21.0. No paid model calls were made.
 

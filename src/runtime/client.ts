@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { readFile, realpath } from 'node:fs/promises';
 
 export interface RuntimeAddress { pid: number; port: number }
 interface RuntimeFailure { stage: string; code: string; errorName?: string; frames?: string[]; pid?: number; version?: string }
@@ -27,7 +27,10 @@ export class RuntimeClient {
   }
 
   private async connect(): Promise<RuntimeAddress> {
-    const manifest = JSON.parse(await readFile(path.join(this.directory, 'package.json'), 'utf8'));
+    // VS Code URI paths can use a lowercase drive letter. DSH's package routing
+    // and Node must use one physical path to share module-scoped boot state.
+    const directory = await realpath(this.directory);
+    const manifest = JSON.parse(await readFile(path.join(directory, 'package.json'), 'utf8'));
     const identity = createHash('sha256').update(path.resolve(this.home).toLowerCase()).digest('hex').slice(0, 32);
     const pipe = `\\\\.\\pipe\\dsh-companion-${identity}`;
     let launched = false;
@@ -78,8 +81,8 @@ export class RuntimeClient {
         if (code !== 'ENOENT' && code !== 'ECONNREFUSED' && code !== 'DSH_RUNTIME_STOPPING') throw error;
         if (Date.now() >= deadline) throw new Error('DSH 控制入口启动超时 (DSH_RUNTIME_TIMEOUT)');
         if (code !== 'DSH_RUNTIME_STOPPING' && !launched && !this.closed) {
-          const child = spawn(path.join(this.directory, 'bin', 'node.exe'), ['--expose-internals', path.join(this.directory, 'host.mjs'), this.home, this.sourceHome],
-            { windowsHide: true, detached: true, stdio: 'ignore', cwd: this.directory });
+          const child = spawn(path.join(directory, 'bin', 'node.exe'), ['--expose-internals', path.join(directory, 'host.mjs'), this.home, this.sourceHome],
+            { windowsHide: true, detached: true, stdio: 'ignore', cwd: directory });
           await new Promise<void>((resolve, reject) => { child.once('spawn', resolve); child.once('error', reject); });
           child.once('exit', code => {
             if (code === 0) return;

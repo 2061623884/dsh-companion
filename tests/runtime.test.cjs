@@ -11,6 +11,31 @@ async function stopped(pid) {
   assert.fail(`Owned runtime ${pid} did not stop`);
 }
 
+test('a VS Code lowercase drive path can persist the preview confirmation across restart', { timeout: 30000 }, async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-welcome-regression-'));
+  const home = path.join(directory, 'home'), source = path.join(directory, 'no-source');
+  const nativePath = runtime.replace(/^[A-Z]:/, value => value.toLowerCase());
+  const client = new RuntimeClient(nativePath, home, source); t.after(() => client.dispose());
+  const connection = new RuntimeConnection({ runtimeDirectory: nativePath, dataHome: home, assetsDirectory: path.resolve('dist'), acquire: () => client.acquire() });
+  t.after(() => connection.dispose());
+  const base = await connection.start(), first = await client.acquire();
+  async function rpc(base, method, args) {
+    const response = await fetch(base + '/api/settings/' + method, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: base },
+      body: JSON.stringify({ type: 'client-request', rpcId: require('node:crypto').randomUUID(), method: 'settings/' + method, payload: { args } }) });
+    assert.equal(response.status, 200); return (await response.json()).result;
+  }
+  const result = await rpc(base, 'mutate', { ns: 'ui-settings-general', ops: [{ op: 'set', path: ['welcomeNoticeVersion'], value: '2026-09-28.1' }], expectedRevision: 0 });
+  assert.equal(result.ok, true, JSON.stringify(result.error));
+  assert.equal(result.value.value.welcomeNoticeVersion, '2026-09-28.1');
+  await connection.dispose(); client.dispose(); await stopped(first.pid);
+  const next = new RuntimeClient(runtime, home, source); t.after(() => next.dispose());
+  const reopened = new RuntimeConnection({ runtimeDirectory: runtime, dataHome: home, assetsDirectory: path.resolve('dist'), acquire: () => next.acquire() });
+  t.after(() => reopened.dispose());
+  const again = await rpc(await reopened.start(), 'describe', {});
+  assert.equal(again.value.namespaces.find(item => item.ns === 'ui-settings-general').value.welcomeNoticeVersion, '2026-09-28.1');
+  const second = await next.acquire(); await reopened.dispose(); next.dispose(); await stopped(second.pid);
+});
+
 test('bundled runtime cold-starts without desktop, shares windows and exits only after last lease', { timeout: 30000 }, async t => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-runtime-'));
   const home = path.join(directory, 'home'), source = path.join(directory, 'no-desktop');
@@ -90,7 +115,7 @@ test('owner pipe stays bound while the last-client shutdown saves its runtime', 
   const identity = createHash('sha256').update(path.resolve(home).toLowerCase()).digest('hex').slice(0, 32);
   const reply = await new Promise((resolve, reject) => {
     const socket = net.connect(`\\\\.\\pipe\\dsh-companion-${identity}`);
-    socket.on('error', reject); socket.on('connect', () => socket.write(JSON.stringify({ type: 'attach', version: '0.3.0' }) + '\n'));
+    socket.on('error', reject); socket.on('connect', () => socket.write(JSON.stringify({ type: 'attach', version: require('../runtime/package.json').version }) + '\n'));
     socket.once('data', value => { socket.destroy(); resolve(JSON.parse(value)); });
   });
   assert.equal(reply.type, 'stopping');
