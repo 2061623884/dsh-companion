@@ -1,5 +1,6 @@
 import { build } from 'esbuild';
 import { mkdir, copyFile } from 'node:fs/promises';
+import { prepareWorkBuddy } from './scripts/prepare-workbuddy.mjs';
 await mkdir('dist', { recursive: true });
 await Promise.all([
   build({ entryPoints: ['src/extension.ts'], outfile: 'dist/extension.js', bundle: true, platform: 'node', format: 'cjs', target: 'node22', external: ['vscode'], sourcemap: false }),
@@ -10,3 +11,4 @@ await Promise.all([
   copyFile('src/sidebar/client/sidebar.css', 'dist/sidebar.css'),
   copyFile('src/sidebar/client/bootstrap.js', 'dist/bootstrap.js'),
 ]);
+await prepareWorkBuddy('runtime');

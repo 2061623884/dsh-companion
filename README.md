@@ -4,7 +4,7 @@ A Windows x64 VS Code sidebar for DeepSeek Harness with its own bundled runtime.
 
 ## Install and use
 
-Install the local VSIX and reload VS Code. Open the blue whale entry in the editor title bar or the secondary sidebar. Companion starts its own background automatically. The first launch imports compatible model/API-key settings and completed history from an existing desktop home, without changing the original files. WorkBuddy requires a fresh login under Settings / Plugins; its OAuth tokens are not copied.
+Install the local VSIX and reload VS Code. Open the blue whale entry in the editor title bar or the secondary sidebar. Companion starts its own background automatically. The first launch imports compatible model/API-key settings and completed history from an existing desktop home, without changing the original files. If Companion has no independent WorkBuddy login, it automatically uses the desktop profile's access token read-only in memory. No OAuth tokens are copied, refreshed, overwritten or deleted in desktop home. Desktop token updates are read automatically; expired borrowed tokens require the desktop to supply a new token. Without either login source, the normal Settings / Plugins login remains available.
 
 The sidebar follows VS Code themes, binds new chats to the current workspace and includes removable current-file/selection references. Plugin management, automation and settings remain available in the Web UI. Multiple VS Code windows share one Companion runtime; after the last window exits it stops tasks and saves sessions. Closing or hiding only the sidebar does not stop work.
 

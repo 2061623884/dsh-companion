@@ -150,7 +150,7 @@ export async function importDesktopData(source, home) {
   }
   const profile = path.join(staging, 'profiles/companion');
   await fs.mkdir(profile, { recursive: true });
-  const report = { version: 1, sourceFound: await exists(source), historyFiles: 0, historySessions: 0, attachmentFiles: 0, skipped: [], workbuddyLoginRequired: true };
+  const report = { version: 1, sourceFound: await exists(source), historyFiles: 0, historySessions: 0, attachmentFiles: 0, skipped: [] };
   const patches = [];
   for (const file of [path.join(source, 'profiles/desktop/cordis.patch.yml'), path.join(source, 'cordis.patch.yml')]) {
     if (!await exists(file)) continue;

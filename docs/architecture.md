@@ -1,5 +1,7 @@
 # Architecture
 
+WorkBuddy's pinned provider constructs its credential store through one checked build-time seam. A composed adapter keeps independent Companion login ownership intact; only when none exists does it read the desktop profile's credential, strip its refresh token and return current access in memory. It re-reads desktop updates, rejects expired borrowed access and refuses borrowed logout with an explanatory error. The host supplies the existing read-only migration source path through its child environment. No prototype patch, filesystem hook, desktop launch, credential copy or shared writable directory is used.
+
 RuntimeConnection exposes start/reconnect/dispose and hides the bundled process, dynamic port, browser authentication and local HTTP/SSE/WebSocket proxy. RuntimeClient privately maintains a named-pipe lease. The owning host binds the pipe before importing or starting DSH; losing startup contenders exit without booting another core. A ready response is sent only after the Web server and connection services are available.
 
 The host owns one-time migration, public runProfile bootstrap and last-client shutdown. Migration uses a small read-only Cordis persistence scope; it never creates or resumes an Agent. It filters settings and credential records, checks source revisions, and excludes durable pending inputs/unclosed turns. Caches are generated only in Companion home.

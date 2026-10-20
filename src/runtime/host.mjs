@@ -52,6 +52,7 @@ try {
 }
 idle();
 process.env.DSH_HOME = home;
+process.env.DSH_COMPANION_DESKTOP_HOME = source;
 process.env.PATH = path.join(directory, 'bin') + path.delimiter + (process.env.PATH || '');
 // Read-only bundled packages; package-manager writes are confined to the user's profile.
 async function boot() {

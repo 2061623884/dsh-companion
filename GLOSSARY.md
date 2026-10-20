@@ -10,7 +10,7 @@ _Avoid_: desktop backend, hidden desktop
 **Companion home**: The independent configuration, credentials, sessions and attachment data used by Companion.
 _Avoid_: desktop profile
 
-**Desktop home**: The existing desktop DSH data, used only as a read-only source during migration.
+**Desktop home**: The existing desktop DSH data, used read-only during migration and for borrowed WorkBuddy access tokens.
 _Avoid_: shared home
 
 **Migration snapshot**: The initial copy of compatible configuration and historical data, with a recorded set of skipped session IDs.

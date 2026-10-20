@@ -6,4 +6,5 @@ dist/
 runtime/bin/
 runtime/host.mjs
 runtime/import.mjs
+runtime/workbuddy-auth.mjs
 runtime/bundle-manifest.json
