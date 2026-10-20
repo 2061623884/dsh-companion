@@ -1,5 +1,11 @@
 # Review: independent runtime 0.3.0
 
+## Startup I/O optimization: 0.3.2
+
+Standards and Spec were reviewed separately by parallel agents against fixed baseline 1b0fc84, through implementation commit 1ecf493. Both reported zero remaining actionable findings. Standards confirmed that dependency bundling stays in the clean runtime preparation step, and handshake EOF retry stays inside RuntimeClient with host spawning limited to missing/refused pipes. Spec confirmed preservation of all nine TypeBox entry points, declarations and shared state, with no replay of application requests or change to desktop ownership.
+
+All 21 automated checks, typecheck and packaging passed. The final installed 0.3.2 entry matched the build hash; its TypeBox export/behavior contract passed with 26 reads. A native VS Code Webview run using that installed runtime reached authenticated readiness in 3,118ms, displayed the notice, dismissed it 296ms after clicking and verified persistent acknowledgement. Reviews explicitly preserve the evidence boundary: synchronous file reads explain most of the reproduced 23.676s wait, but the OS-level cause and elimination of long disk-cold openings remain unproven. No push or publication.
+
 ## Windows confirmation fix: 0.3.1
 
 Reviewed separately on Standards and Spec axes against baseline 153fe72. No remaining actionable findings on either axis. Runtime directory normalization remains inside RuntimeClient; the connection/sidebar interfaces and desktop ownership boundaries are unchanged. The actual lowercase-drive settings regression, restart persistence and real Webview button flow now have explicit coverage. All 19 automated checks and typecheck passed; the expanded active-old-version lease check also passed after the final user-facing message change.
