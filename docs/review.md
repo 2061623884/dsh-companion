@@ -1,5 +1,11 @@
 # Review: independent runtime 0.3.0
 
+## Windows confirmation fix: 0.3.1
+
+Reviewed separately on Standards and Spec axes against baseline 153fe72. No remaining actionable findings on either axis. Runtime directory normalization remains inside RuntimeClient; the connection/sidebar interfaces and desktop ownership boundaries are unchanged. The actual lowercase-drive settings regression, restart persistence and real Webview button flow now have explicit coverage. All 19 automated checks and typecheck passed; the expanded active-old-version lease check also passed after the final user-facing message change.
+
+An active old-version window retains its tasks and receives no forced shutdown. A new version fails promptly with a reload instruction in that situation. After all old leases release, the new version waits through save/exit grace. Review confirmed this existing lifecycle choice rather than introducing a long blind wait. Startup performance limits are recorded in docs/validation.md; no claim is made that the occasional long first cold start is fully eliminated.
+
 Fixed baseline: 0a6610a8987c1cadff75605616e6576b96e151df. Standards and Spec were reviewed by separate parallel agents; confirmed findings were repaired and each axis rechecked. Current contract: docs/spec.md and AGENTS.md. No push or publication.
 
 ## Standards

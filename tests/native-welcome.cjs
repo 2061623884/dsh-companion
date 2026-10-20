@@ -22,7 +22,8 @@ exports.run = async () => {
     if (document.body.textContent.includes('暂时无法保存确认状态')) { clearInterval(timer); post('welcome-failed'); }
   }, 100);
 })();`);
-  const runtime = path.join(root, 'runtime'), home = path.join(directory, 'home');
+  const runtime = path.join(vscode.extensions.getExtension('local-development.dsh-companion').extensionPath, 'runtime');
+  const home = path.join(directory, 'home');
   const client = new RuntimeClient(runtime, home, path.join(directory, 'no-source'));
   const connection = new RuntimeConnection({ runtimeDirectory: runtime, dataHome: home, assetsDirectory: directory, acquire: () => client.acquire() });
   let panel; const traces = [];

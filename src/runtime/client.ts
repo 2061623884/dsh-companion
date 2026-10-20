@@ -8,7 +8,10 @@ import { readFile, realpath } from 'node:fs/promises';
 export interface RuntimeAddress { pid: number; port: number }
 interface RuntimeFailure { stage: string; code: string; errorName?: string; frames?: string[]; pid?: number; version?: string }
 function failureOf(message: RuntimeFailure): Error {
-  const failure = new Error(`DSH ${message.stage}失败 (${message.code}, ${message.errorName || 'RuntimeError'})`);
+  const description = message.code === 'DSH_RUNTIME_VERSION_IN_USE'
+    ? '其他 VS Code 窗口仍在使用旧版 DSH 后台，请重新加载这些窗口后重试'
+    : `DSH ${message.stage}失败`;
+  const failure = new Error(`${description} (${message.code}, ${message.errorName || 'RuntimeError'})`);
   failure.stack = failure.message + '\n' + (message.frames || []).join('\n');
   return failure;
 }

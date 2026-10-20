@@ -133,8 +133,10 @@ test('an upgraded client waits for the old runtime grace instead of failing or b
   const manifest = JSON.parse(await fs.readFile(path.join(runtime, 'package.json'))); manifest.version = '0.2.9';
   await fs.writeFile(path.join(oldRuntime, 'package.json'), JSON.stringify(manifest));
   const old = new RuntimeClient(oldRuntime, home, source); t.after(() => old.dispose());
-  const before = await old.acquire(); old.dispose();
+  const before = await old.acquire();
   const next = new RuntimeClient(runtime, home, source); t.after(() => next.dispose());
+  await assert.rejects(next.acquire(), /其他 VS Code 窗口.*DSH_RUNTIME_VERSION_IN_USE/);
+  process.kill(before.pid, 0); old.dispose();
   const after = await next.acquire(); assert.notEqual(before.pid, after.pid);
   assert.throws(() => process.kill(before.pid, 0), { code: 'ESRCH' }); next.dispose(); await stopped(after.pid);
 });
