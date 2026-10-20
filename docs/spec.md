@@ -5,11 +5,13 @@ Review baseline: 0a6610a8987c1cadff75605616e6576b96e151df. Review all changes si
 ## Runtime and lifecycle
 
 - Windows x64 local VS Code only. Ship pinned Node, pnpm and the public DSH Web composition in the VSIX. A desktop DSH installation and system Node must not be required. Never launch, stop or modify desktop DSH.
+- Reduce measured startup file I/O at packaging time by bundling the pinned TypeBox leaf dependency, preserving all public ESM entry paths, declarations, function names and shared state. Record actual startup separately from artificial slow-I/O experiments; do not claim a guaranteed cold-start limit.
 - Use an independent DSH_HOME under ExtensionContext.globalStorageUri, with a companion profile. One Windows named pipe owns one runtime per canonical home. Concurrent VS Code clients share its PID. Distinct desktop and Companion cores may coexist because they own independent data.
 - Wait for Web service readiness, obtain its dynamic loopback port, and authenticate using Companion's own browser grant. Do not scan processes or run PowerShell on startup or on the send path. Never replay an accepted or potentially accepted prompt.
 - Hiding the sidebar leaves tasks alone. After the last extension client disconnects, wait five seconds for reload/reconnection, then cancel tasks, flush sessions and dispose the runtime. No permanent system service. One window exiting must not stop other windows' tasks.
 - If another active window still owns an older runtime version, fail promptly with an instruction to reload those windows; do not interrupt its tasks or wait for the entire startup timeout. Once its last lease ends, wait through its save/exit grace before starting the new version.
 - Startup failures must expose a safe stage/error code and diagnostic stack frames without credential values or source content.
+- A control pipe can close during owner handoff before replying. Retry only this startup handshake within its existing deadline; create a host only when the pipe is absent/refused, and never replay application requests.
 
 ## First-use migration
 

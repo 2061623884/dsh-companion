@@ -11,6 +11,26 @@ async function stopped(pid) {
   assert.fail(`Owned runtime ${pid} did not stop`);
 }
 
+test('startup retries a control pipe closed before its readiness reply', async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-control-eof-'));
+  const home = path.join(directory, 'home');
+  const identity = createHash('sha256').update(path.resolve(home).toLowerCase()).digest('hex').slice(0, 32);
+  let attempts = 0;
+  const sockets = new Set();
+  const server = net.createServer(socket => {
+    sockets.add(socket); socket.on('close', () => sockets.delete(socket));
+    socket.once('data', () => {
+      if (++attempts === 1) { socket.end(); return; }
+      socket.write(JSON.stringify({ type: 'ready', version: require('../runtime/package.json').version, pid: process.pid, port: 12345 }) + '\n');
+    });
+  });
+  await new Promise(resolve => server.listen(`\\\\.\\pipe\\dsh-companion-${identity}`, resolve));
+  const client = new RuntimeClient(runtime, home, path.join(directory, 'none'));
+  t.after(async () => { client.dispose(); for (const socket of sockets) socket.destroy(); await new Promise(resolve => server.close(resolve)); });
+  assert.deepEqual(await client.acquire(), { pid: process.pid, port: 12345 });
+  assert.equal(attempts, 2);
+});
+
 test('a VS Code lowercase drive path can persist the preview confirmation across restart', { timeout: 30000 }, async t => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-welcome-regression-'));
   const home = path.join(directory, 'home'), source = path.join(directory, 'no-source');

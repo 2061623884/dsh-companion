@@ -81,9 +81,9 @@ export class RuntimeClient {
         });
       } catch (error) {
         const code = (error as NodeJS.ErrnoException).code;
-        if (code !== 'ENOENT' && code !== 'ECONNREFUSED' && code !== 'DSH_RUNTIME_STOPPING') throw error;
+        if (code !== 'ENOENT' && code !== 'ECONNREFUSED' && code !== 'DSH_RUNTIME_STOPPING' && code !== 'DSH_CONTROL_CLOSED') throw error;
         if (Date.now() >= deadline) throw new Error('DSH 控制入口启动超时 (DSH_RUNTIME_TIMEOUT)');
-        if (code !== 'DSH_RUNTIME_STOPPING' && !launched && !this.closed) {
+        if ((code === 'ENOENT' || code === 'ECONNREFUSED') && !launched && !this.closed) {
           const child = spawn(path.join(directory, 'bin', 'node.exe'), ['--expose-internals', path.join(directory, 'host.mjs'), this.home, this.sourceHome],
             { windowsHide: true, detached: true, stdio: 'ignore', cwd: directory });
           await new Promise<void>((resolve, reject) => { child.once('spawn', resolve); child.once('error', reject); });

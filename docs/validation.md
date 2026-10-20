@@ -1,4 +1,14 @@
-# Validation: 0.3.1
+# Validation: 0.3.2
+
+## Startup I/O investigation (0.3.2)
+
+Baseline is the installed 0.3.1 source commit 1b0fc84. A debug-only staged runtime reproduced 23,676ms to authenticated HTTP readiness in an empty home. Of that, core initialization took 21,890ms; migration was 8ms. Synchronous readFileSync observations totaled approximately 18.49s. CPU usage was 3.09s user plus 1.58s system; no external Undici request was observed. Asynchronous filesystem durations overlap synchronous blocking and must not be added to those wall times. This locates the large wait in startup file access, not historical migration; it does not prove whether the operating-system cache, scanning or another filesystem factor caused each cold read to stall.
+
+Subsequent baseline measurements read roughly 2,741 distinct files through 4,300 synchronous reads. TypeBox accounted for 669 files, the largest leaf package. A freshly extracted VSIX at a normal-length test path started in 3,703/3,142ms after its separate extraction step. Core initialization was 2,656/2,630ms. A staged TypeBox bundle reduced its actual core-start reads to 15 files and core initialization to 2,349/2,375ms; total readiness was 2,868/2,885ms. These process starts did not flush the operating system's file cache, so they are not guarantees for a machine's first disk-cold opening.
+
+A controlled slow-filesystem replay added waits before each first dependency-file read. It reduced total startup from 43,679ms to 33,509ms, about 23%, and delayed files from 2,728 to 2,071. This is an artificial stress comparison, not an actual 25-second cold-start benchmark; Windows wait granularity also makes each nominal 7ms delay longer in practice. A new deterministic regression first failed on 670 TypeBox file reads, then passed with 26 reads while importing all nine public entry points. It also checks export names/types/function names against the pristine 1.3.27 contract, compiled and interpreted validation, shared format registry and namespace identity.
+
+The optimization runs at dependency preparation time with esbuild shared ESM chunks. Public paths and adjacent TypeScript declarations are retained; Node, DSH and provider versions are unchanged. No production global filesystem hook or persistent compile cache is introduced. Diagnosis also exposed a control-pipe EOF at old-owner exit; a deterministic real-pipe test reproduced it, and RuntimeClient now retries this handshake without launching a competing host or replaying chat traffic.
 
 ## Windows Webview confirmation regression (0.3.1)
 

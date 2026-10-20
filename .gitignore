@@ -6,3 +6,4 @@ dist/
 runtime/bin/
 runtime/host.mjs
 runtime/import.mjs
+runtime/bundle-manifest.json

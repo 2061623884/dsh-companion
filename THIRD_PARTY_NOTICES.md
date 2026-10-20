@@ -8,6 +8,8 @@ The DeepSeek name and whale mark belong to their respective owners and are used 
 
 The VSIX bundles public DeepSeek Harness 0.2.1-rc.2 packages (MIT), WorkBuddy Connect 0.6.10 from public Git commit 4738217d156c46f088d424dedc83a66e7308f64a (MIT), pnpm and Node 24.21.0. Their original notices remain in runtime/node_modules and runtime/bin/NODE-LICENSE. No private desktop Host or Electron application is copied. Account configuration, credentials and conversation data are never included in the VSIX or source archive.
 
+TypeBox 1.3.27 (MIT) is rebundled with esbuild to reduce startup file reads. Its public ESM entry paths, adjacent declarations and shared module identity are preserved. Original license files and notices remain in its package directory; runtime/bundle-manifest.json records the build tool and generated files.
+
 ## js-yaml license
 
 (The MIT License)

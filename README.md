@@ -13,7 +13,7 @@ Desktop and Companion data are independent after migration. Historical sessions 
 ## Build on Windows x64
 
 1. Run npm ci in this directory.
-2. Run npm run prepare-runtime to install the locked public runtime packages and download/check Node.
+2. Run npm run prepare-runtime to install clean locked runtime packages, download/check Node and bundle the TypeBox entry points. Run this complete command again when rebuilding dependencies; it restores pristine inputs before bundling.
 3. Run npm run check and npm test.
 4. Run npm run package to build the win32-x64 VSIX in ../outputs.
 
