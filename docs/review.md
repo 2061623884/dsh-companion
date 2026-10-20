@@ -1,5 +1,11 @@
 # Review: independent runtime 0.3.0
 
+## Read-only WorkBuddy reuse: 0.3.3
+
+Standards and Spec reviewed the diff from fixed baseline 734fa697074e6de9fda8ab0dfb4618e1bc10e6f0 to implementation 79522ca independently. Each reported zero remaining actionable findings. Spec additionally checked native acceptance commit 66dca1d for unintended desktop writes/network operations and found none. All 23 automated checks and the installed native account/Webview acceptance passed; see docs/validation.md.
+
+Standards: the composed credential adapter isolates ownership selection, expiry and logout protection from editor/sidebar code. The build-time seam checks the pinned upstream version and exact construction site; no prototype patch or shared writable desktop directory is introduced. Spec: existing independent login takes priority, borrowed refresh tokens are stripped, source updates are re-read, expiry fails clearly, and borrowing never refreshes/writes/deletes desktop credentials. The real account validation made catalog/billing reads only, with zero login/refresh/generation requests and an unchanged source credential. Long-term independent renewal remains outside the approved read-only scheme. No push or publication.
+
 ## Startup I/O optimization: 0.3.2
 
 Standards and Spec were reviewed separately by parallel agents against fixed baseline 1b0fc84, through implementation commit 1ecf493. Both reported zero remaining actionable findings. Standards confirmed that dependency bundling stays in the clean runtime preparation step, and handshake EOF retry stays inside RuntimeClient with host spawning limited to missing/refused pipes. Spec confirmed preservation of all nine TypeBox entry points, declarations and shared state, with no replay of application requests or change to desktop ownership.

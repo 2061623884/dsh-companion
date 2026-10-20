@@ -1,4 +1,12 @@
-# Validation: 0.3.2
+# Validation: 0.3.3
+
+## Read-only desktop WorkBuddy access (0.3.3)
+
+All 23 automated checks and typecheck/build/package passed. The new adapter test uses the real pinned credential store/parser with synthetic credentials: desktop access inside the upstream five-minute refresh margin does not refresh; the returned refresh token is empty; desktop updates are read on the next resolution; expired/malformed/cross-region input fails explicitly; an independent Companion login keeps its normal refresh ownership. Borrowed logout is rejected without changing the source. A real bundled-host HTTP check uses intercepted outbound traffic and verifies automatic signed-in/model state, logout protection, no refresh header/request and no credential copy. Standards and Spec reviews against 734fa69 reported zero remaining actionable findings; added native tests were also reviewed for desktop ownership.
+
+The final 0.3.3 VSIX was installed with Microsoft VS Code's CLI. Installed host, adapter and modified provider entry matched the build SHA-256 values. An isolated native VS Code 1.124.2 test used that installed runtime, an initialized empty owned home and the real desktop credential as a read-only source. Backend readiness was 3,139ms. The HTTP status and actual Webview automatically showed signed-in state with 19 models; catalog source was live. The only external fetches were the read-only model directory GET and billing query POST, both HTTP 200. The acceptance guard blocked all other external operations; zero refresh/login/check-in/generation attempts occurred. No credentials were copied to either provider-owned path in the test home. The desktop credential file retained its SHA-256, HTTP logout returned a clear read-only error, and the owned runtime exited after its last lease. No paid model calls or desktop application changes were made.
+
+This proves current access reuse, not indefinite renewal. The desktop token may expire or be revoked; Companion reads later desktop updates but never refreshes borrowed credentials. If no usable updated desktop token exists, it reports the condition. Independent Companion login remains available only as an explicit user action; this change initiates no login automatically. The international variant has synthetic separation/invalid-input coverage but no live international account acceptance in this run.
 
 ## Startup I/O investigation (0.3.2)
 
