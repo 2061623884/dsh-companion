@@ -55,3 +55,28 @@ test('WorkBuddy borrows current desktop access without refresh, copying, logout 
   delete process.env.DSH_COMPANION_DESKTOP_HOME;
   assert.equal(withDesktopWorkBuddyAuth(local, cn, parseWorkBuddyAuth, realmOf), local);
 });
+
+test('read-only authorization follows separate custom homes with spaces and Unicode', async t => {
+  const { withDesktopWorkBuddyAuth } = await import('../runtime/workbuddy-auth.mjs');
+  const { WorkBuddyCredentialStore: Store, CN_VARIANT: cn, AI_VARIANT: ai, parseWorkBuddyAuth } =
+    await import(pathToFileURL(path.resolve('runtime/node_modules/dsh-workbuddy-connect/lib/index.js')));
+  const { I: realmOf } = await import('../runtime/node_modules/dsh-workbuddy-connect/lib/variants-F-c2C6Tw.js');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-auth-homes-'));
+  const previous = process.env.DSH_COMPANION_DESKTOP_HOME;
+  t.after(() => { if (previous === undefined) delete process.env.DSH_COMPANION_DESKTOP_HOME; else process.env.DSH_COMPANION_DESKTOP_HOME = previous; });
+  const stores = [];
+  for (const [label, variant, domain] of [['用户甲 custom home', cn, 'copilot.tencent.com'], ['User B 自定义目录', ai, 'www.workbuddy.ai']]) {
+    const source = path.join(root, label), directory = path.join(source, 'profiles/desktop/.dsh-workbuddy-connect');
+    await fs.mkdir(directory, { recursive: true });
+    await fs.writeFile(path.join(directory, variant.ownFilename), JSON.stringify({ region: variant.region,
+      auth: { accessToken: 'fixture-access-' + variant.id, refreshToken: 'fixture-never-refresh', domain, expiresAt: Date.now() + 3600000 },
+      account: { uid: 'fixture-account-' + variant.id } }));
+    process.env.DSH_COMPANION_DESKTOP_HOME = source;
+    const local = new Store({ variant, ownPath: path.join(root, 'companion-' + variant.id, variant.ownFilename), refresh: () => assert.fail('Borrowed credential refreshed') });
+    stores.push(withDesktopWorkBuddyAuth(local, variant, parseWorkBuddyAuth, realmOf));
+  }
+  // Each adapter retains its own discovered source, even after environment changes.
+  const credentials = await Promise.all(stores.map(store => store.resolve()));
+  assert.deepEqual(credentials.map(value => value.uid), ['fixture-account-workbuddy', 'fixture-account-workbuddy-ai']);
+  assert.ok(credentials.every(value => value.refreshToken === ''));
+});

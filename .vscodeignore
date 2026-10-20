@@ -13,3 +13,21 @@ AGENTS.md
 
 scripts/**
 GLOSSARY.md
+
+**/.env
+**/.env.*
+**/.credentials.yaml
+**/.workbuddy*-auth.json
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+.dsh/**
+profiles/**
+sessions/**
+attachments/**
+storages/**
+runtime-error.json
+migration.json
+outputs/**
+work/**
