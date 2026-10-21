@@ -51,6 +51,11 @@ exports.run = async () => {
     });
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     for (const bytes of [256, 1048576]) {
+      const locale = bytes === 256 ? 'zh' : 'en';
+      const language = await fetch(base + '/api/settings/mutate', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: base },
+        body: JSON.stringify({ type: 'client-request', rpcId: 'fixture-locale', method: 'settings/mutate', payload: { args: { ns: 'locale',
+          ops: [{ op: 'set', path: ['preference'], value: locale }], expectedRevision: bytes === 256 ? 0 : 1 } } }) });
+      assert.equal(language.status, 200); assert.equal((await language.json()).result.ok, true);
       const file = path.join(directory, 'fixture-' + bytes + '.py'); await fs.writeFile(file, 'x'.repeat(bytes));
       await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(file));
       await new Promise(resolve => setTimeout(resolve, 150));
@@ -65,7 +70,7 @@ exports.run = async () => {
     document.execCommand('insertText',false,'PERF_SEND_SENTINEL');
     requestAnimationFrame(()=>{
       phase(2);
-      const send=document.querySelector('button[aria-label="发送消息"]');const started=performance.now(),samples=[];
+      const send=document.querySelector('button[aria-label="${locale === 'zh' ? '发送消息' : 'Send message'}"]');const started=performance.now(),samples=[];
       const sample=()=>{samples.push({ms:performance.now()-started,empty:!input.innerText.includes('PERF_SEND_SENTINEL')});
         if(performance.now()-started<1600)requestAnimationFrame(sample);else parent.postMessage({source:'dsh-companion-sidebar',type:'trace',stage:'native-send-result',durationMs:samples.find(value=>value.empty)?.ms??-1,bytes:samples.at(-1).empty?0:1},'*');};
       send.click();phase(3);requestAnimationFrame(sample);
@@ -98,7 +103,7 @@ exports.run = async () => {
       assert.ok(samples.durationMs >= 0, 'send must visibly clear the draft while the request is still pending');
       assert.ok(samples.durationMs < 800, 'local feedback must not wait for the intercepted server response');
       assert.equal(samples.bytes, 1, 'failed draft must be restored');
-      result.cases.push({ bytes, webviewAndProbeMs: Math.round(performance.now() - caseStart), firstFeedbackMs: Math.round(samples.durationMs), draftRestored: true, traces });
+      result.cases.push({ bytes, locale, webviewAndProbeMs: Math.round(performance.now() - caseStart), firstFeedbackMs: Math.round(samples.durationMs), draftRestored: true, traces });
       panel.dispose(); panel = undefined;
     }
     assert.equal(promptCount, 2); assert.ok(promptBytes[1] > 1048576);

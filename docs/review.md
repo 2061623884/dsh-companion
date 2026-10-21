@@ -1,5 +1,9 @@
 # Review: 0.3.6
 
+## Native hosted acceptance follow-up
+
+Reviewed the bounded phase diagnostics and bilingual test setup against ddf0203c7d4b524a265c2d59610eeeea3e6095b8, including diagnostic commit 45f3ed2 and the working-tree locale fix. Independent Standards and Spec reviews each found zero remaining actionable issues. The trace reuses fixed numeric stage/visibility fields and timeout reports only stage/visibility/counts. Locale settings are asserted through RPC in a new synthetic owned home; no production UI or contributor preferences change. The same real Webview, file sizes, intercepted responses, feedback threshold and failure-restoration assertions remain. The raw probe wire encodes visibility as 0/1 in the existing numeric bytes field and converts it to a boolean locally; the spec does not require a new production protocol field.
+
 ## Hosted CI repair
 
 Reviewed the working-tree follow-up against 03e3b89a1b9a80531f8497b020da95071887e4f8 using docs/spec.md's Hosted CI follow-up requirements. Independent Standards and Spec reviews each found zero remaining actionable issues. The change backdates only the owned runtime's freshly signed cookie by one second and keeps its encoded lifetime at five minutes; HMAC/authority checks and no-replay behavior remain. A real-runtime synthetic child-clock regression covers authentication discovery and RPC. The cold-start test registers connection cleanup before startup, including failure paths. No desktop data/credentials, dependency versions, installation package or workflow timeouts were changed. The actual VM clock offset was not measured; docs/validation.md distinguishes the hosted failures from the deterministic clock reproduction.

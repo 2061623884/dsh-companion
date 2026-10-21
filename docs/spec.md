@@ -6,6 +6,7 @@ Review baseline: 03e3b89a1b9a80531f8497b020da95071887e4f8 to the working tree. P
 
 - Investigate the first hosted run's 401/RUNTIME_AUTH_FAILED results and integration-worker non-exit. Keep request authentication, HMAC/authority checks, the five-minute signed lifetime and no-replay behavior. Accommodate a small receiver clock lag at signing, using a deterministic real-runtime regression that changes only a synthetic child process's Date.now.
 - Ensure the cold-start integration test releases its connection even if startup/assertions fail. Do not force-exit the test runner, ignore errors or increase timeouts to claim success. Record the actual hosted outcome and distinguish observed CI errors from a simulated clock offset; no precise VM clock skew was captured.
+- Diagnose native send acceptance without exposing input or auth data. Exercise both bundled DSH languages in the synthetic profile, using each selected locale's accessible send label. Preserve real Webview rendering, the two file sizes, response interception, feedback-before-response and failure-restoration assertions. Keep locale changes confined to the synthetic owned home; do not change user or desktop language preferences.
 
 ## GitHub checks, stage one
 
