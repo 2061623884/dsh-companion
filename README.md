@@ -1,26 +1,124 @@
 # DSH Companion
 
-A Windows x64 VS Code sidebar for DeepSeek Harness with its own bundled runtime. Desktop DSH and a system Node installation are not required.
+将 DeepSeek Harness 集成到 VS Code 右侧栏，在当前项目中进行 AI 对话、引用代码和使用 Agent 工具。
 
-## Install and use
+插件内置独立的 DSH 运行时，打开侧栏即可自动准备后台，无需预先启动桌面应用，也无需为插件运行额外安装 Node.js。
 
-Install the local VSIX and reload VS Code. Open the blue whale entry in the editor title bar or the secondary sidebar. Companion starts its own background automatically. The first launch imports compatible model/API-key settings and completed history from an existing desktop home, without changing the original files. If Companion has no independent WorkBuddy login, it automatically uses the desktop profile's access token read-only in memory. No OAuth tokens are copied, refreshed, overwritten or deleted in desktop home. Desktop token updates are read automatically; expired borrowed tokens require the desktop to supply a new token. Without either login source, the normal Settings / Plugins login remains available.
+## 功能
 
-The sidebar follows VS Code themes, binds new chats to the current workspace and includes removable current-file/selection references. Plugin management, automation and settings remain available in the Web UI. Multiple VS Code windows share one Companion runtime; after the last window exits it stops tasks and saves sessions. Closing or hiding only the sidebar does not stop work.
+- **右侧栏对话**：从编辑器标题栏的鲸鱼按钮或命令面板打开，支持新建会话和浏览历史。
+- **自动关联项目**：新会话绑定当前工作区，支持多根工作区；已有会话保留原来的工作路径。
+- **代码上下文引用**：自动识别当前文件或选区，支持未保存的编辑内容，也可通过编辑器右键菜单显式引用；引用可单独移除。
+- **跟随编辑器主题**：适配窄侧栏，颜色随 VS Code 主题变化。
+- **DSH 功能入口**：在侧栏中选择模型、使用工具，并访问插件、自动化任务和设置。
+- **后台自动管理**：同一数据目录下的多个 VS Code 窗口共享后台，最后一个连接释放后自动保存并退出。隐藏侧栏不会中断任务。
+- **已有环境衔接**：首次使用时可导入已有桌面 DSH 的兼容模型配置和已完成的会话历史，保留原始数据。
 
-Desktop and Companion data are independent after migration. Historical sessions with queued inputs or interrupted turns are skipped and reported in the Companion home migration.json; only these skipped IDs are retried on later background starts. Desktop workspace pinning, ordering and archive flags are not imported. Remote/WSL extension windows are not supported in this release.
+## 支持环境
 
-## Build on Windows x64
+| 项目 | 要求 |
+| --- | --- |
+| 操作系统 | Windows x64 |
+| 编辑器 | VS Code 1.106.0 或以上 |
+| 工作区 | 本机工作区，支持多根工作区 |
+| 模型服务 | 在 DSH 设置中配置可用的模型连接 |
 
-1. Run npm ci in this directory.
-2. Run npm run prepare-runtime to install clean locked runtime packages, download/check Node and bundle the TypeBox entry points. Run this complete command again when rebuilding dependencies; it restores pristine inputs before bundling.
-3. Run npm run check and npm test.
-4. Run npm run package to build the win32-x64 VSIX in ../outputs.
+macOS、Linux、WSL 和远程工作区暂不在当前版本的支持范围内。
 
-All runtime packages are included in the VSIX; first use does not download the core. Installing optional future plugins may use the bundled pnpm and the network. No credentials or user history are part of the source/archive/VSIX.
+## 安装与使用
 
-## Design and verification
+### 安装 VSIX
 
-See docs/spec.md, docs/architecture.md, docs/validation.md and docs/adr/0001-independent-runtime.md. Runtime lifecycle, editor context, references and sidebar UI have separate module interfaces. Tests do not call paid models.
+先按下方[构建步骤](#从源码构建)生成 `.vsix` 文件，再安装到 VS Code。安装包不直接存放在源码仓库中。
 
-Authorization discovery uses each user's DSH_HOME/home directory and VS Code storage, with no developer account or machine path embedded. WorkBuddy is the first provider adapter; future integrations belong beside it in the runtime. See [privacy and publication rules](docs/privacy.md) for supported scope, extension placement, sensitive-file exclusions and local pre-publication scans.
+1. 打开 VS Code 的扩展视图。
+2. 点击扩展视图右上角的 `…`，选择 **从 VSIX 安装…**（Install from VSIX）。
+3. 选择生成的 `dsh-companion-<版本号>.vsix`。
+4. 安装完成后，按提示重新加载窗口；也可在命令面板执行 `Developer: Reload Window`。
+
+### 开始对话
+
+1. 打开项目文件夹或工作区。
+2. 点击编辑器标题栏的鲸鱼按钮，或执行 `DSH Companion: 打开右侧聊天`。
+3. 在设置中确认模型连接可用，选择模型并新建会话。
+4. 打开文件或选中代码，确认输入框中的引用内容后发送消息。无需引用时，移除对应的引用项即可。
+
+### 常用命令
+
+在 VS Code 命令面板中搜索 `DSH Companion`：
+
+| 命令 | 用途 |
+| --- | --- |
+| `DSH Companion: 打开右侧聊天` | 显示聊天侧栏 |
+| `DSH Companion: 重新连接后台` | 重新建立后台连接 |
+| `DSH Companion: 引用当前文件或选区` | 将当前编辑器内容加入引用 |
+
+## 从源码构建
+
+### 准备工具
+
+在 Windows x64 上准备：
+
+- Node.js 24 和 npm。
+- Git，并确保能够访问 GitHub 上的项目依赖。
+- Windows PowerShell，运行时准备脚本会使用 `powershell.exe` 解压文件。
+- 可访问 npm registry、GitHub 和 nodejs.org 的网络环境。
+
+这些是构建工具要求。安装生成的 VSIX 后，插件使用包内运行时。
+
+### 获取源码与依赖
+
+在 PowerShell 中执行：
+
+```powershell
+git clone https://github.com/2061623884/dsh-companion.git
+cd dsh-companion
+
+npm ci
+npm run prepare-runtime
+```
+
+`prepare-runtime` 根据锁文件安装运行时依赖，下载并校验指定版本的 Node.js，然后准备打包所需的依赖文件。更新或重新准备运行时依赖时，请重新执行完整命令。
+
+### 检查、测试与打包
+
+```powershell
+npm run check
+npm test
+
+New-Item -ItemType Directory -Force -Path ..\outputs | Out-Null
+npm run package
+```
+
+生成的安装包位于 `../outputs/dsh-companion-<版本号>.vsix`，版本号取自 `package.json`。按照上方安装步骤加载即可。
+
+| 脚本 | 作用 |
+| --- | --- |
+| `npm run prepare-runtime` | 准备干净、锁定版本的运行时依赖和内置 Node.js |
+| `npm run build` | 构建扩展、侧栏资源和运行时入口；需先完成运行时准备 |
+| `npm run check` | 执行 TypeScript 类型检查 |
+| `npm test` | 构建并运行自动化测试 |
+| `npm run package` | 检查、构建并生成 Windows x64 VSIX |
+
+常规自动化测试使用合成用例和本地拦截，不调用付费模型。
+
+## 数据与兼容性
+
+DSH Companion 使用 VS Code 提供的独立数据目录。已有桌面 DSH 的数据来源根据当前用户环境发现，不依赖固定用户名或安装路径。
+
+首次导入用于衔接已有配置与历史，不会持续双向同步两端的配置和会话。未完成或包含待处理输入的历史会话会跳过；桌面端的会话置顶、排序、归档以及全部第三方插件状态不属于完整迁移范围。
+
+模型连接、插件和工具的可用性取决于相应服务及其配置。更详细的数据范围与兼容性约定见[功能规范](docs/spec.md)。
+
+## 文档与贡献
+
+- [功能规范](docs/spec.md)：功能范围、数据迁移与运行行为。
+- [架构设计](docs/architecture.md)：运行时、编辑器上下文、引用和侧栏的职责划分。
+- [隐私与发布规则](docs/privacy.md)：用户环境发现、敏感数据排除和发布前检查。
+- [验证范围](docs/validation.md)：已有验证与未覆盖场景。
+
+欢迎通过 [Issues](https://github.com/2061623884/dsh-companion/issues) 提交问题或建议。报告问题时请提供系统、VS Code 与插件版本、复现步骤和错误代码，并移除密钥、访问令牌、个人路径及真实会话内容。
+
+## 许可证
+
+本项目采用 [MIT 许可证](LICENSE)。第三方代码、运行时依赖和品牌标识的说明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
