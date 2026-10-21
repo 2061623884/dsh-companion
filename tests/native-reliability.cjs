@@ -56,24 +56,28 @@ exports.run = async () => {
       await new Promise(resolve => setTimeout(resolve, 150));
       const probe = `
 (() => {
+  const phase=value=>parent.postMessage({source:'dsh-companion-sidebar',type:'trace',stage:'native-probe-phase',durationMs:value,bytes:document.visibilityState==='visible'?1:0},'*');
+  phase(0);
   let began=false;const timer=setInterval(()=>{
     const input=document.querySelector('[data-composer-input][contenteditable="true"]'), chip=document.querySelector('[data-composer-chip="vscode-editor"]');
-    if(began||!input||!chip)return;began=true;clearInterval(timer);
+    if(began||!input||!chip)return;began=true;clearInterval(timer);phase(1);
     input.focus();const range=document.createRange();range.selectNodeContents(input);range.collapse(false);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);
     document.execCommand('insertText',false,'PERF_SEND_SENTINEL');
     requestAnimationFrame(()=>{
+      phase(2);
       const send=document.querySelector('button[aria-label="发送消息"]');const started=performance.now(),samples=[];
       const sample=()=>{samples.push({ms:performance.now()-started,empty:!input.innerText.includes('PERF_SEND_SENTINEL')});
         if(performance.now()-started<1600)requestAnimationFrame(sample);else parent.postMessage({source:'dsh-companion-sidebar',type:'trace',stage:'native-send-result',durationMs:samples.find(value=>value.empty)?.ms??-1,bytes:samples.at(-1).empty?0:1},'*');};
-      send.click();requestAnimationFrame(sample);
+      send.click();phase(3);requestAnimationFrame(sample);
     });
   },50);
 })();`;
       await fs.writeFile(path.join(directory, 'bootstrap.js'), await fs.readFile(path.join(root, 'dist/bootstrap.js'), 'utf8') + probe);
       panel = vscode.window.createWebviewPanel('dshReliabilityTest', 'DSH reliability acceptance', vscode.ViewColumn.Beside, { enableScripts: true, localResourceRoots: [] });
       const traces = [], caseStart = performance.now();
+      let probePhase = -1, probeVisible = false;
       const samples = await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('Native send acceptance timed out')), 25000);
+        const timeout = setTimeout(() => reject(new Error(`Native send acceptance timed out: phase=${probePhase}, visible=${probeVisible}, prompts=${promptCount}`)), 25000);
         panel.webview.onDidReceiveMessage(async message => {
           if (message.type === 'ready') await panel.webview.postMessage({ type: 'context', context: editor.snapshot() });
           if (message.type === 'read-reference') {
@@ -82,6 +86,9 @@ exports.run = async () => {
             await panel.webview.postMessage({ type: 'reference-result', requestId: message.requestId, value });
           }
           if (message.type === 'trace') {
+            if (message.stage === 'native-probe-phase' && Number.isInteger(message.durationMs) && message.durationMs >= 0 && message.durationMs <= 3) {
+              probePhase = message.durationMs; probeVisible = message.bytes === 1;
+            }
             if (message.stage === 'native-send-result') { clearTimeout(timeout); resolve(message); }
             else traces.push({ stage: message.stage, durationMs: message.durationMs });
           }
