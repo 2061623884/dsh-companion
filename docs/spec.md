@@ -1,5 +1,37 @@
 # Independent bundled runtime (0.3.0)
 
+## Cold-start file access round (0.3.6)
+
+Review against the saved 0.3.5 source snapshot, preserving previous uncommitted stages. No commit, push or publication.
+
+- Reproduce slow startup with a fresh synthetic Companion home and a nonexistent desktop source. Separate process/entry imports, migration, module imports, profile discovery, core initialization and web readiness. Report synchronous read totals separately from overlapping asynchronous durations. The earlier 16.6-second run has no detailed phase trace; do not invent one or claim that it can be reconstructed.
+- Optimize only measured startup dependency file access at preparation time. Fold pinned zod 4.4.3, execa 10.2.0, yaml 2.9.1 and semver 7.8.5 graphs. Preserve public entry paths, named/default exports, function names, ESM/CommonJS behavior, shared registries/constructors, Zod entry initialization order and SemVer deep requires. Keep adjacent declarations, license notices and package versions. Do not trim DSH plugins/providers or introduce production filesystem hooks, compile caches, services, prewarming or desktop changes.
+- Extend preparation/preflight and regression coverage for these artifacts. Fail explicitly on stale/incomplete bundles. A normal build/unit test must still work without runtime dependencies and must never prepare them.
+- Compare real startup and a controlled synthetic slow-file replay separately; do not label a repeated process launch as a disk-cold measurement or promise an upper bound. Validate the actual bundled runtime and native editor/Webview behavior, with synthetic authorization and intercepted prompts only. Preserve migration, read-only desktop ownership, references, draft restoration and all existing UI/functions. Review Standards and Spec independently, correct confirmed findings, and install the resulting local VSIX without forcing a user-window reload.
+
+## Maintainability round (0.3.5)
+
+Review against the saved 0.3.4 source snapshot, including its uncommitted reliability fixes. No push or publication.
+
+- Separate root-only build/typecheck/unit tests from installing/preparing DSH and from runtime integration/native acceptance. The fast workflow must work without runtime/node_modules or runtime/bin, must not patch dependencies and must not start DSH. Keep existing runtime regressions in an explicit integration command.
+- Move the outer frame's executable script out of HTML strings into a separately checked browser entry; embed only its generated bundle under the existing nonce/CSP. Strictly check production TypeScript plus runtime/browser/build JavaScript with checkJs. Keep pinned upstream contracts narrow and private; do not copy the whole upstream type system or disable strict checks to hide gaps.
+- Separate the private adapter into parent-message/read lifecycle, DSH draft/reference/send adaptation, and layout/theme/workspace responsibilities. Keep a small composition/disposal entry. Preserve reference order/removal, pending sends and restored drafts, automatic workspace selection, toolbar actions, theme and narrow layout. Do not introduce a general plugin/provider framework.
+- Reject incomplete/stale runtime packaging before VSIX creation: required Node/license assets, version alignment, current generated entries, provider adaptation, TypeBox bundle manifest and public contracts. Do not silently install or repair during checking.
+- Provide reproducible synthetic native workspace/profile setup independent of personal paths and credentials. Validate actual VS Code/Webview behavior and use only intercepted prompt requests.
+- Preserve independent Companion storage and all desktop read-only ownership rules. Review Standards and Spec separately, repair confirmed findings, and record actual verification limits. Dependency trimming, CI, remote publication and new product features belong to later work.
+
+## Reliability round (0.3.4)
+
+Review baseline for this round: d78e3ef45aab2065aadb37a14d7b5ef8111f4d9f, including working-tree changes. Implement only the approved first-stage reliability and latency diagnosis; no push or publication.
+
+- Reject malformed external control records without uncaught exceptions or handshake retries. Invalid ordinary-text reference markers remain plain text.
+- Only the adapter's installed-listener handshake makes business messaging ready; iframe load alone must not drain queued references.
+- Bound total background startup (including migration) to 90 seconds, preserving the client's 120-second connection deadline. After the five-second reconnection grace, request cancellation and graceful saving, with a ten-second owner shutdown deadline. Never release the owner pipe before process exit or affect another window's active lease.
+- Cancel migration before further session/attachment commits or initial home publication. Replace retry records atomically. Invalid records must fail explicitly, preserve existing data and explain restoration from backup; never silently reinitialize a home.
+- Preserve upstream sign-in semantics while distinguishing borrowed read-only authorization from independent authorization. Expose borrowed usability/expiry without refresh, login, credential copying or desktop modification, and remove automatic-renewal promises for borrowed credentials.
+- Measure startup separately from UI readiness, workspace binding, reference reads/serialization and observable send feedback. Diagnostics contain only fixed stage names, durations and byte counts. Distinguish reproduced slow startup from first-send behavior that does not reproduce; do not claim a guaranteed disk-cold startup bound.
+- Validate synthetic regressions and real bundled runtime/VS Code Webview behavior, without paid model calls. Preserve all existing UI, migration ownership, code reference and draft restoration behavior. Review Standards and Spec separately and repair confirmed findings.
+
 Review baseline: 0a6610a8987c1cadff75605616e6576b96e151df. Review all changes since this commit on Standards and Spec axes.
 
 ## Runtime and lifecycle

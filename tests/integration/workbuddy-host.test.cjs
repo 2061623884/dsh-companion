@@ -1,8 +1,8 @@
 const { test } = require('node:test'), assert = require('node:assert/strict');
 const fs = require('node:fs/promises'), path = require('node:path'), os = require('node:os');
 const { pathToFileURL } = require('node:url');
-const { RuntimeClient } = require('../dist/test/runtime/client');
-const { RuntimeConnection } = require('../dist/test/runtime/connection');
+const { RuntimeClient } = require('../../dist/test/runtime/client');
+const { RuntimeConnection } = require('../../dist/test/runtime/connection');
 
 test('actual bundled host discovers desktop WorkBuddy auth and protects it through HTTP logout', { timeout: 45000 }, async t => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-workbuddy-host-'));
@@ -31,19 +31,25 @@ test('actual bundled host discovers desktop WorkBuddy auth and protects it throu
   assert.equal(response.status, 200);
   const status = await response.json();
   assert.equal(status.status, 'signed-in');
+  assert.equal(status.authSource, 'desktop-read-only'); assert.equal(status.authUsable, true);
   assert.ok(status.models.some(model => model.id === 'fixture-workbuddy'));
   const logout = await fetch(base + '/plugins/dsh-workbuddy-connect/login', { method: 'POST',
     headers: { 'Content-Type': 'application/json', Origin: base, 'x-workbuddy-login-key': status.loginKey }, body: JSON.stringify({ action: 'logout' }) });
   const result = await logout.json();
   assert.equal(result.status, 'failed'); assert.match(result.message, /只读/);
   assert.equal((await (await fetch(base + '/plugins/dsh-workbuddy-connect/status')).json()).status, 'signed-in');
+  const expired = JSON.parse(auth); expired.auth.expiresAt = Math.floor(Date.now() / 1000) - 60;
+  const expiredText = JSON.stringify(expired); await fs.writeFile(filename, expiredText);
+  const expiryStatus = await (await fetch(base + '/plugins/dsh-workbuddy-connect/status')).json();
+  assert.equal(expiryStatus.status, 'signed-in'); assert.equal(expiryStatus.authSource, 'desktop-read-only');
+  assert.equal(expiryStatus.authUsable, false); assert.equal(expiryStatus.authReason, 'DSH_WORKBUDDY_DESKTOP_AUTH_EXPIRED');
   await connection.dispose(); client.dispose();
   for (let i = 0; i < 100; i++) {
     try { process.kill(address.pid, 0); }
     catch (error) { if (error.code === 'ESRCH') break; throw error; }
     await new Promise(resolve => setTimeout(resolve, 100));
   }
-  assert.equal(await fs.readFile(filename, 'utf8'), auth);
+  assert.equal(await fs.readFile(filename, 'utf8'), expiredText);
   for (const file of ['.dsh-workbuddy-connect/.workbuddy-auth.json', 'profiles/companion/.dsh-workbuddy-connect/.workbuddy-auth.json']) {
     await assert.rejects(fs.access(path.join(home, file)), { code: 'ENOENT' });
   }

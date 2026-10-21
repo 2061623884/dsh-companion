@@ -3,10 +3,10 @@ const fs = require('node:fs/promises'), path = require('node:path'), os = requir
 const { pathToFileURL } = require('node:url');
 
 test('WorkBuddy borrows current desktop access without refresh, copying, logout or stale caching', async t => {
-  const { withDesktopWorkBuddyAuth } = await import('../runtime/workbuddy-auth.mjs');
+  const { withDesktopWorkBuddyAuth } = await import('../../runtime/workbuddy-auth.mjs');
   const { WorkBuddyCredentialStore: Store, CN_VARIANT: cn, AI_VARIANT: ai, parseWorkBuddyAuth } =
     await import(pathToFileURL(path.resolve('runtime/node_modules/dsh-workbuddy-connect/lib/index.js')));
-  const { I: realmOf } = await import('../runtime/node_modules/dsh-workbuddy-connect/lib/variants-F-c2C6Tw.js');
+  const { I: realmOf } = await import('../../runtime/node_modules/dsh-workbuddy-connect/lib/variants-F-c2C6Tw.js');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-workbuddy-auth-'));
   const previous = process.env.DSH_COMPANION_DESKTOP_HOME;
   process.env.DSH_COMPANION_DESKTOP_HOME = path.join(root, 'desktop');
@@ -25,6 +25,8 @@ test('WorkBuddy borrows current desktop access without refresh, copying, logout 
   const store = withDesktopWorkBuddyAuth(local, cn, parseWorkBuddyAuth, realmOf);
   const first = document(credential('fixture-desktop-1')); await fs.writeFile(desktopFile, first);
   assert.equal((await store.status()).state, 'signed-in');
+  assert.equal((await store.status()).authSource, 'desktop-read-only');
+  assert.equal((await store.status()).authUsable, true);
   assert.equal((await store.resolve()).accessToken, 'fixture-desktop-1');
   assert.equal((await store.resolve()).refreshToken, '');
   assert.equal(refreshes, 0);
@@ -35,6 +37,10 @@ test('WorkBuddy borrows current desktop access without refresh, copying, logout 
   assert.equal((await store.resolve()).accessToken, 'fixture-desktop-2');
   const expired = document({ ...credential('fixture-expired'), expiresAtMs: Date.now() - 1000 });
   await fs.writeFile(desktopFile, expired);
+  const expiredStatus = await store.status();
+  assert.equal(expiredStatus.state, 'signed-in');
+  assert.equal(expiredStatus.authUsable, false);
+  assert.equal(expiredStatus.authReason, 'DSH_WORKBUDDY_DESKTOP_AUTH_EXPIRED');
   await assert.rejects(store.resolve(), { code: 'DSH_WORKBUDDY_DESKTOP_AUTH_EXPIRED' });
   assert.equal(refreshes, 0); assert.equal(await fs.readFile(desktopFile, 'utf8'), expired);
   await fs.writeFile(desktopFile, '{ invalid secret-free fixture');
@@ -57,10 +63,10 @@ test('WorkBuddy borrows current desktop access without refresh, copying, logout 
 });
 
 test('read-only authorization follows separate custom homes with spaces and Unicode', async t => {
-  const { withDesktopWorkBuddyAuth } = await import('../runtime/workbuddy-auth.mjs');
+  const { withDesktopWorkBuddyAuth } = await import('../../runtime/workbuddy-auth.mjs');
   const { WorkBuddyCredentialStore: Store, CN_VARIANT: cn, AI_VARIANT: ai, parseWorkBuddyAuth } =
     await import(pathToFileURL(path.resolve('runtime/node_modules/dsh-workbuddy-connect/lib/index.js')));
-  const { I: realmOf } = await import('../runtime/node_modules/dsh-workbuddy-connect/lib/variants-F-c2C6Tw.js');
+  const { I: realmOf } = await import('../../runtime/node_modules/dsh-workbuddy-connect/lib/variants-F-c2C6Tw.js');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-auth-homes-'));
   const previous = process.env.DSH_COMPANION_DESKTOP_HOME;
   t.after(() => { if (previous === undefined) delete process.env.DSH_COMPANION_DESKTOP_HOME; else process.env.DSH_COMPANION_DESKTOP_HOME = previous; });

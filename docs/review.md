@@ -1,4 +1,34 @@
-# Review: independent runtime 0.3.0
+# Review: 0.3.6
+
+## Cold-start file access round: 0.3.6
+
+Reviewed against the preserved 0.3.5 source snapshot, excluding earlier uncommitted reliability/maintainability work from this round's delta. HEAD remains d78e3ef45aab2065aadb37a14d7b5ef8111f4d9f; no new commit or push. Standards and Spec were reviewed independently by parallel agents against docs/spec.md and the ownership, privacy and minimal-change rules.
+
+Standards: one confirmed finding resolved, zero remaining. The first Zod single-file prototype pulled classic initialization into core-only imports. A fresh-subprocess core/custom-locale/mini/classic regression first failed, then passed after introducing separate entry groups with shared chunks. Re-review closed the finding: root imports keep v3/mini lazy, registry identity is shared, and classic initializes its locale at the original point. CommonJS facades preserve original detected ESM export names and SemVer deep identity. Preparation stays in one dedicated build module; host/client/sidebar interfaces and production startup code are unchanged. The suspected repeat-build failure was withdrawn after confirming that build:runtime does not invoke the clean-only bundler; prepare-runtime itself always starts with npm ci.
+
+Spec: zero confirmed functional findings. Only the four measured pinned library graphs are transformed at preparation time; licenses/declarations/entry paths remain. Preflight checks every output/facade hash plus real public contracts. No plugins/providers, desktop files, independent storage, borrowed authorization rules or visible UI behavior were changed. Measurements distinguish the new 12.534s reproduction, unavailable detailed trace of the older 16.6s run, repeated process starts and artificial slow-file replay. No claim of a disk-cold bound is made. The non-blocking core-only parse-cost observation was measured explicitly; three local samples improved from 34–37ms to 12–23ms without OS cache flushing.
+
+Final verification after repair: strict checks, 24 unit tests, 12 integration tests, both native acceptance runners, real dependency/preflight contracts and the root-only clean-source gate all passed. Secret scans included the newly generated code. Actual measurements and their limits are in docs/validation.md. Standards: 1 resolved, 0 remaining. Spec: 0 functional findings, 0 remaining. No commit, push or publication.
+
+## Maintainability round: 0.3.5
+
+Reviewed the second-stage delta against the preserved 0.3.4 working-tree snapshot, rather than attributing the previous uncommitted reliability fixes to this stage. The snapshot manifest SHA-256 is a9d83500c35d6a600e76350be86ebd66db1cc9e4d8eaa95d0a2a9af9b1807120. Standards and Spec were reviewed independently by parallel agents against the Maintainability round in docs/spec.md, repository ownership/privacy rules and the minimal-change requirement. HEAD remains d78e3ef; no commit or push was made.
+
+Standards: zero actionable findings. The private adapter now composes transport, input/reference and layout modules, with narrow pinned upstream contracts and explicit disposal. The outer frame script is checked source, not a handwritten HTML script body. Strict TypeScript/checkJs includes runtime and build preparation without importing the installed DSH dependency tree. A proposed non-Error rejection concern was withdrawn after checking the pinned workspace/session/gateway implementation: its documented failures extend Error, and the preexisting error.message handling is unchanged. No speculative defensive fallback was added.
+
+Spec: one scope finding resolved, zero remaining. A bulk version edit had unnecessarily changed a transitive lockfile declaration; it was restored while keeping the project release at 0.3.5 and resolved dependencies unchanged. The fast build/unit gate no longer prepares runtime files. Integration and native gates remain explicit; native workspaces and VS Code profiles are generated and isolated. Preflight detects incomplete/stale runtime artifacts without repairing them. Desktop data ownership, read-only authorization and existing UI/functionality are preserved.
+
+Final verification includes 24 unit and 11 integration checks, both native acceptance runners, the clean-source/no-runtime fast gate and real browser send/status-card acceptance. Timing limits and the remaining variable cold-start delay are recorded in docs/validation.md. Standards: 0 findings. Spec: 1 resolved, 0 remaining.
+
+## Reliability round: 0.3.4
+
+Fixed baseline d78e3ef45aab2065aadb37a14d7b5ef8111f4d9f to the working tree; no new commits. Standards and Spec were reviewed by separate parallel agents against the Reliability round section of docs/spec.md and the existing ownership/privacy rules.
+
+Standards: one boundary finding was repaired. The provider status-card expression and locale assumptions originally lived in runtime preparation; they now belong to src/sidebar/client/workbuddy-status.mjs behind adaptWorkBuddyStatusClient. The preparation script calls that private compatibility boundary, checks the pinned provider construction/status seam and fails on incompatible anchors. Re-review closed the finding and found no remaining actionable standard or cohesion/coupling issue.
+
+Spec: zero actionable findings. The review checked protocol validation, adapter-only readiness, startup cancellation/deadlines, owner retention during shutdown, atomic migration records and non-destructive corruption failure, borrowed authorization usability/expiry and preservation of desktop ownership. No stage-two dependency/CI/framework work was introduced. Startup and first-send conclusions remain bounded by the measurements in docs/validation.md: a slow file-access startup reproduced, while native synthetic first-send acceptance did not reproduce a freeze. No model-latency or disk-cold upper-bound claim is made.
+
+Standards: 1 resolved, 0 remaining. Spec: 0 remaining. Typecheck/build, the full 31-test suite, the later added mid-retry cancellation check, real bundled-provider HTTP checks and native/browser UI acceptance passed. No commit, push or publication.
 
 ## User-independent discovery and privacy hardening
 

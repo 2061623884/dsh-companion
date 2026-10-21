@@ -1,9 +1,11 @@
 import { readFile, writeFile, copyFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { adaptWorkBuddyStatusClient } from '../src/sidebar/client/workbuddy-status.mjs';
 
 // One checked seam in the pinned upstream provider. No global prototype patch,
 // desktop package edit or application-wide credential interception.
+/** @param {string} runtime */
 export async function prepareWorkBuddy(runtime) {
   const directory = await realpath(path.join(runtime, 'node_modules/dsh-workbuddy-connect'));
   const manifest = JSON.parse(await readFile(path.join(directory, 'package.json'), 'utf8'));
@@ -16,7 +18,20 @@ export async function prepareWorkBuddy(runtime) {
   const relative = path.relative(path.dirname(entry), target).replaceAll('\\', '/');
   const imported = `import { withDesktopWorkBuddyAuth } from ${JSON.stringify(relative.startsWith('.') ? relative : './' + relative)};\n`;
   const source = (await readFile(entry, 'utf8')).replaceAll('\r\n', '\n');
-  if (source.includes(replacement) && source.startsWith(imported)) return;
-  if (source.split(original).length !== 2) throw new Error('Pinned WorkBuddy store construction changed');
-  await writeFile(entry, imported + source.replace(original, replacement));
+  let prepared = source;
+  if (!source.includes(replacement) || !source.startsWith(imported)) {
+    if (source.split(original).length !== 2) throw new Error('Pinned WorkBuddy store construction changed');
+    prepared = imported + source.replace(original, replacement);
+  }
+  const statusOriginal = '\t\tstatus: "signed-in",\n\t\t...authStatus.nickname';
+  const statusReplacement = '\t\tstatus: "signed-in",\n\t\t...authStatus.authSource === "desktop-read-only" ? { authSource: authStatus.authSource, authUsable: authStatus.authUsable, ...authStatus.authReason ? { authReason: authStatus.authReason } : {} } : {},\n\t\t...authStatus.nickname';
+  if (!prepared.includes(statusReplacement)) {
+    if (prepared.split(statusOriginal).length !== 2) throw new Error('Pinned WorkBuddy status seam changed');
+    prepared = prepared.replace(statusOriginal, statusReplacement);
+  }
+  const clientEntry = path.join(path.dirname(entry), 'client.js');
+  const clientSource = await readFile(clientEntry, 'utf8');
+  const client = adaptWorkBuddyStatusClient(clientSource);
+  if (client !== clientSource) await writeFile(clientEntry, client);
+  if (prepared !== source) await writeFile(entry, prepared);
 }

@@ -5,6 +5,7 @@ tests/**
 docs/**
 .test-work/**
 tsconfig.json
+tsconfig.scripts.json
 build.mjs
 package-lock.json
 .gitignore

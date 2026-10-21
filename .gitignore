@@ -8,6 +8,7 @@ runtime/host.mjs
 runtime/import.mjs
 runtime/workbuddy-auth.mjs
 runtime/bundle-manifest.json
+runtime/startup-bundle-manifest.json
 
 # Local credentials and runtime data never belong in source control.
 .env

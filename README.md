@@ -75,16 +75,20 @@ git clone https://github.com/2061623884/dsh-companion.git
 cd dsh-companion
 
 npm ci
-npm run prepare-runtime
-```
-
-`prepare-runtime` 根据锁文件安装运行时依赖，下载并校验指定版本的 Node.js，然后准备打包所需的依赖文件。更新或重新准备运行时依赖时，请重新执行完整命令。
-
-### 检查、测试与打包
-
-```powershell
 npm run check
 npm test
+```
+
+日常检查、构建和单元测试只需要根目录依赖，不需要安装 DSH 运行时或准备内置 Node.js，也不会改写运行时依赖。
+
+### 完整运行时验证与打包
+
+```powershell
+npm run prepare-runtime
+npm run test:integration
+
+# 已安装 Microsoft VS Code 时，可执行隔离的原生验收
+npm run test:native
 
 New-Item -ItemType Directory -Force -Path ..\outputs | Out-Null
 npm run package
@@ -92,13 +96,20 @@ npm run package
 
 生成的安装包位于 `../outputs/dsh-companion-<版本号>.vsix`，版本号取自 `package.json`。按照上方安装步骤加载即可。
 
+`prepare-runtime` 安装锁定的 DSH 依赖，下载并校验内置 Node.js，完成依赖准备；修改运行时源码后，`build:runtime` 单独复制入口并应用受控适配。集成测试和打包会执行该构建步骤，日常单测不会执行。
+
+`test:native` 自动生成合成多根工作区，并使用隔离的 VS Code 配置和桌面数据来源。默认查找当前用户安装的 Microsoft VS Code；其他安装位置可通过 `VSCODE_EXECUTABLE` 指定 `Code.exe`。不会使用真实登录或调用模型。生成的测试工作区和结果位于 `.test-work`。
+
 | 脚本 | 作用 |
 | --- | --- |
 | `npm run prepare-runtime` | 准备干净、锁定版本的运行时依赖和内置 Node.js |
-| `npm run build` | 构建扩展、侧栏资源和运行时入口；需先完成运行时准备 |
-| `npm run check` | 执行 TypeScript 类型检查 |
-| `npm test` | 构建并运行自动化测试 |
-| `npm run package` | 检查、构建并生成 Windows x64 VSIX |
+| `npm run build` | 仅构建扩展、侧栏和单元测试入口 |
+| `npm run build:runtime` | 复制运行时入口并应用适配；需先准备运行时依赖 |
+| `npm run check` | 严格检查 TypeScript，以及运行时和构建脚本的 JavaScript |
+| `npm test` / `npm run test:unit` | 构建并运行轻量单元测试 |
+| `npm run test:integration` | 验证真实运行时、多窗口、迁移和授权隔离 |
+| `npm run test:native` | 自动准备合成环境并执行真实 VS Code/Webview 验收 |
+| `npm run package` | 检查运行时完整性、版本、许可证和必要契约，再生成 Windows x64 VSIX |
 
 常规自动化测试使用合成用例和本地拦截，不调用付费模型。
 

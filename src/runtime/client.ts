@@ -7,8 +7,24 @@ import { readFile, realpath } from 'node:fs/promises';
 
 export interface RuntimeAddress { pid: number; port: number }
 interface RuntimeFailure { stage: string; code: string; errorName?: string; frames?: string[]; pid?: number; version?: string }
+type ControlMessage = RuntimeFailure & { type: 'error' } | { type: 'starting'; stage: string } |
+  { type: 'stopping' } | { type: 'ready'; version: string; pid: number; port: number };
+function isControlMessage(value: unknown): value is ControlMessage {
+  if (!value || typeof value !== 'object') return false;
+  const message = value as Record<string, unknown>;
+  if (message.type === 'stopping') return true;
+  if (message.type === 'starting') return ['import', 'boot', 'web'].includes(message.stage as string);
+  if (message.type === 'ready') return typeof message.version === 'string' && Number.isInteger(message.pid) && (message.pid as number) > 0 &&
+    Number.isInteger(message.port) && (message.port as number) > 0 && (message.port as number) <= 65535;
+  return message.type === 'error' && typeof message.stage === 'string' && /^[a-z-]+$/.test(message.stage) &&
+    typeof message.code === 'string' && /^[A-Z0-9_]+$/.test(message.code) &&
+    (message.errorName === undefined || typeof message.errorName === 'string') &&
+    (message.frames === undefined || (Array.isArray(message.frames) && message.frames.every(frame => typeof frame === 'string')));
+}
 function failureOf(message: RuntimeFailure): Error {
-  const description = message.code === 'DSH_RUNTIME_VERSION_IN_USE'
+  const description = message.code === 'DSH_IMPORT_MARKER_INVALID'
+    ? '迁移记录损坏，现有数据已保留。请从备份恢复 migration.json，不要删除数据目录'
+    : message.code === 'DSH_RUNTIME_VERSION_IN_USE'
     ? '其他 VS Code 窗口仍在使用旧版 DSH 后台，请重新加载这些窗口后重试'
     : `DSH ${message.stage}失败`;
   const failure = new Error(`${description} (${message.code}, ${message.errorName || 'RuntimeError'})`);
@@ -58,9 +74,10 @@ export class RuntimeClient {
             let newline: number;
             while ((newline = buffer.indexOf('\n')) >= 0) {
               const line = buffer.slice(0, newline); buffer = buffer.slice(newline + 1);
-              let message;
+              let message: unknown;
               try { message = JSON.parse(line); }
               catch { socket.destroy(Object.assign(new Error('DSH 控制协议无效'), { code: 'DSH_CONTROL_PROTOCOL' })); return; }
+              if (!isControlMessage(message)) { socket.destroy(Object.assign(new Error('DSH 控制协议无效'), { code: 'DSH_CONTROL_PROTOCOL' })); return; }
               if (message.type === 'error') {
                 settled = true; socket.destroy();
                 reject(failureOf(message)); return;

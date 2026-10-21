@@ -3,16 +3,24 @@ import path from 'node:path';
 
 // The pinned provider owns its independent login. Only this adapter knows about
 // borrowing desktop access tokens; borrowed refresh tokens never leave it.
+/**
+ * @param {import('./contracts.js').WorkBuddyStore} local
+ * @param {{ownFilename: string, region: string}} variant
+ * @param {(text: string) => import('./contracts.js').WorkBuddyCredential | undefined} parseCredential
+ * @param {(credential: import('./contracts.js').WorkBuddyCredential) => string | undefined} realmOf
+ * @returns {import('./contracts.js').WorkBuddyStore}
+ */
 export function withDesktopWorkBuddyAuth(local, variant, parseCredential, realmOf) {
   const source = process.env.DSH_COMPANION_DESKTOP_HOME;
   if (!source) return local;
   const filename = path.join(source, 'profiles/desktop/.dsh-workbuddy-connect', variant.ownFilename);
+  /** @param {string} code @param {string} message */
   const failure = (code, message) => Object.assign(new Error(message), { code });
   async function desktop() {
     let text;
     try { text = await readFile(filename, 'utf8'); }
     catch (error) {
-      if (error.code === 'ENOENT') return;
+      if (/** @type {NodeJS.ErrnoException} */ (error).code === 'ENOENT') return;
       throw failure('DSH_WORKBUDDY_DESKTOP_AUTH_READ', '无法读取桌面端 WorkBuddy 授权，请检查文件访问权限。');
     }
     const credential = parseCredential(text);
@@ -39,7 +47,10 @@ export function withDesktopWorkBuddyAuth(local, variant, parseCredential, realmO
     async status() {
       const { credential, borrowed } = await selected();
       if (!borrowed || !credential) return local.status();
+      const usable = credential.expiresAtMs > Date.now();
       return { state: 'signed-in', expiresAtMs: credential.expiresAtMs,
+        authSource: 'desktop-read-only', authUsable: usable,
+        ...(usable ? {} : { authReason: 'DSH_WORKBUDDY_DESKTOP_AUTH_EXPIRED' }),
         nickname: credential.nickname, domain: credential.domain, region: variant.region };
     },
     save: credential => local.save(credential),

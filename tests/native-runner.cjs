@@ -1,4 +1,4 @@
-// Run with Code --extensionDevelopmentPath . --extensionTestsPath tests/native-runner.cjs .test-work/fixtures.code-workspace
+// Run through npm run test:native for a fresh synthetic workspace/profile.
 const vscode = require('vscode'), assert = require('node:assert/strict'), path = require('node:path'), fs = require('node:fs');
 exports.run = async () => {
   const root = path.resolve(__dirname, '..'), { EditorContext } = require('../dist/test/context/editor-context');
@@ -27,7 +27,7 @@ exports.run = async () => {
   received.fire({ type: 'read-reference', uri: uri.toString(), requestId: 'native-1' });
   await new Promise(resolve => setTimeout(resolve, 10));
   assert.match(messages.find(message => message.requestId === 'native-1').value.content, /UNSAVED_CONTEXT/);
-  assert.ok(frameHtml('http://127.0.0.1:12345').includes("event.origin!==window.origin"));
+  assert.match(frameHtml('http://127.0.0.1:12345'), /event\.origin\s*!==\s*window\.origin/);
   sidebar.dispose(); context.dispose(); received.dispose(); disposed.dispose();
   // Exercise the shipped wrapper in an actual VS Code webview, not a simulated window.postMessage.
   const bridgeContext = new EditorContext(), http = require('node:http'), bridgeEvents = [];

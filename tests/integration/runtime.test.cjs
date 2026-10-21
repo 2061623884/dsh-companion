@@ -2,8 +2,8 @@ const { test } = require('node:test'), assert = require('node:assert/strict');
 const fs = require('node:fs/promises'), path = require('node:path'), os = require('node:os');
 const { execFile } = require('node:child_process'), { promisify } = require('node:util'), { createHash } = require('node:crypto');
 const net = require('node:net'), { pathToFileURL } = require('node:url');
-const { RuntimeClient } = require('../dist/test/runtime/client');
-const { RuntimeConnection } = require('../dist/test/runtime/connection');
+const { RuntimeClient } = require('../../dist/test/runtime/client');
+const { RuntimeConnection } = require('../../dist/test/runtime/connection');
 const runtime = path.resolve('runtime'), execute = promisify(execFile);
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function stopped(pid) {
@@ -21,7 +21,7 @@ test('startup retries a control pipe closed before its readiness reply', async t
     sockets.add(socket); socket.on('close', () => sockets.delete(socket));
     socket.once('data', () => {
       if (++attempts === 1) { socket.end(); return; }
-      socket.write(JSON.stringify({ type: 'ready', version: require('../runtime/package.json').version, pid: process.pid, port: 12345 }) + '\n');
+      socket.write(JSON.stringify({ type: 'ready', version: require('../../runtime/package.json').version, pid: process.pid, port: 12345 }) + '\n');
     });
   });
   await new Promise(resolve => server.listen(`\\\\.\\pipe\\dsh-companion-${identity}`, resolve));
@@ -135,7 +135,7 @@ test('owner pipe stays bound while the last-client shutdown saves its runtime', 
   const identity = createHash('sha256').update(path.resolve(home).toLowerCase()).digest('hex').slice(0, 32);
   const reply = await new Promise((resolve, reject) => {
     const socket = net.connect(`\\\\.\\pipe\\dsh-companion-${identity}`);
-    socket.on('error', reject); socket.on('connect', () => socket.write(JSON.stringify({ type: 'attach', version: require('../runtime/package.json').version }) + '\n'));
+    socket.on('error', reject); socket.on('connect', () => socket.write(JSON.stringify({ type: 'attach', version: require('../../runtime/package.json').version }) + '\n'));
     socket.once('data', value => { socket.destroy(); resolve(JSON.parse(value)); });
   });
   assert.equal(reply.type, 'stopping');

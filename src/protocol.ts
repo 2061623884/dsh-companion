@@ -37,7 +37,7 @@ export function isClientMessage(value: unknown): value is ClientMessage {
   const message = value as Record<string, unknown>;
   if (message.type === 'ready') return true;
   if (message.type === 'read-reference') return typeof message.requestId === 'string' && typeof message.uri === 'string';
-  return message.type === 'trace' && ['reference-read', 'reference-roundtrip', 'reference-serialize', 'send-feedback'].includes(message.stage as string) &&
+  return message.type === 'trace' && ['reference-read', 'reference-roundtrip', 'reference-serialize', 'send-feedback', 'send-feedback-timeout', 'workspace-bind'].includes(message.stage as string) &&
     typeof message.durationMs === 'number' && Number.isFinite(message.durationMs) && message.durationMs >= 0 &&
     (message.bytes === undefined || (typeof message.bytes === 'number' && Number.isFinite(message.bytes) && message.bytes >= 0));
 }

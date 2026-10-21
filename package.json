@@ -2,7 +2,7 @@
   "name": "dsh-companion",
   "displayName": "DSH Companion",
   "description": "An independent DeepSeek Harness sidebar for VS Code with bundled runtime and automatic code context.",
-  "version": "0.3.3",
+  "version": "0.3.6",
   "repository": {
     "type": "git",
     "url": "https://github.com/2061623884/dsh-companion.git"
@@ -30,10 +30,14 @@
   ],
   "scripts": {
     "build": "node build.mjs",
-    "check": "tsc --noEmit",
-    "test": "npm run build && node --test tests/*.test.cjs",
-    "package": "npm run check && npm run build && vsce package --target win32-x64 --no-dependencies --allow-missing-repository --skip-license --out ../outputs/dsh-companion-0.3.3.vsix",
-    "prepare-runtime": "npm ci --prefix runtime --omit=dev --no-audit --no-fund && node scripts/prepare-runtime.mjs"
+    "check": "tsc --noEmit && tsc -p tsconfig.scripts.json",
+    "test": "npm run test:unit",
+    "package": "npm run check && npm run build && npm run build:runtime && node scripts/check-runtime.mjs && vsce package --target win32-x64 --no-dependencies --allow-missing-repository --skip-license --out ../outputs/dsh-companion-0.3.6.vsix",
+    "prepare-runtime": "npm ci --prefix runtime --omit=dev --no-audit --no-fund && node scripts/prepare-runtime.mjs",
+    "build:runtime": "node scripts/build-runtime.mjs",
+    "test:unit": "npm run build && node --test tests/unit/*.test.cjs",
+    "test:integration": "npm run build && npm run build:runtime && node --test tests/integration/*.test.cjs",
+    "test:native": "npm run build && npm run build:runtime && node scripts/test-native.mjs"
   },
   "contributes": {
     "viewsContainers": {

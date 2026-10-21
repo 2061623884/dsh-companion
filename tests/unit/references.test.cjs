@@ -1,7 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { ReferenceController } = require('../dist/test/references/reference-controller');
-const { isClientMessage } = require('../dist/test/protocol');
+const { ReferenceController } = require('../../dist/test/references/reference-controller');
+const { isClientMessage } = require('../../dist/test/protocol');
 const file = { kind: 'file', uri: 'file:///project/main.py', name: 'main.py', version: 1 };
 const selection = { ...file, kind: 'selection', range: '1:2-1:5', startLine: 2, endLine: 2,
   content: 'abc', filePath: '/project/main.py', language: 'python', unsaved: true };

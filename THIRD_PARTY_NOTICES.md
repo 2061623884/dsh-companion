@@ -10,6 +10,8 @@ The VSIX bundles public DeepSeek Harness 0.2.1-rc.2 packages (MIT), WorkBuddy Co
 
 TypeBox 1.3.27 (MIT) is rebundled with esbuild to reduce startup file reads. Its public ESM entry paths, adjacent declarations and shared module identity are preserved. Original license files and notices remain in its package directory; runtime/bundle-manifest.json records the build tool and generated files.
 
+The pinned zod 4.4.3, execa 10.2.0, yaml 2.9.1 and semver 7.8.5 libraries (MIT/ISC as recorded in their retained license files) are also rebundled with esbuild to reduce startup file reads. Public paths, shared library state and declarations remain in their package directories. runtime/startup-bundle-manifest.json records generated artifacts and hashes. Zod's CommonJS distribution and YAML's browser distribution are unchanged.
+
 The packaged WorkBuddy Connect 0.6.10 host entry has one checked modification at credential-store construction, composing the Companion-owned read-only desktop access adapter. Its original license and notices are retained. Desktop-installed packages and credentials are not modified.
 
 ## js-yaml license

@@ -4,18 +4,18 @@ import { execFileSync } from 'node:child_process';
 import path, { resolve, join } from 'node:path';
 import { build, version as bundlerVersion } from 'esbuild';
 import { prepareWorkBuddy } from './prepare-workbuddy.mjs';
+import { prepareStartupLeaves } from './prepare-startup-leaves.mjs';
 
 if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('Packaging requires Windows x64');
-const version = '24.21.0';
+const { version, archiveSha256: expected } = JSON.parse(await readFile('runtime/node-version.json', 'utf8'));
 const archive = `node-v${version}-win-x64.zip`;
-const expected = '158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541';
 const cache = resolve('.test-work', `node-${version}`);
 await mkdir(cache, { recursive: true });
 const zip = join(cache, archive);
 let data;
 try { data = await readFile(zip); }
 catch (error) {
-  if (error.code !== 'ENOENT') throw error;
+  if (/** @type {NodeJS.ErrnoException} */ (error).code !== 'ENOENT') throw error;
   const response = await fetch(`https://nodejs.org/dist/v${version}/${archive}`);
   if (!response.ok) throw new Error(`Node download failed: ${response.status}`);
   data = Buffer.from(await response.arrayBuffer());
@@ -45,6 +45,7 @@ for (const entry of entries) {
   let relative = path.relative(path.dirname(original), output).replaceAll('\\', '/');
   if (!relative.startsWith('.')) relative = './' + relative;
   const metadata = Object.values(bundled.metafile.outputs).find(item => item.entryPoint && resolve(item.entryPoint).toLowerCase() === original.toLowerCase());
+  if (!metadata) throw new Error('TypeBox public entry missing from bundler output');
   await writeFile(original, `export * from ${JSON.stringify(relative)};\n` + (metadata.exports.includes('default') ? `export { default } from ${JSON.stringify(relative)};\n` : ''));
 }
 await writeFile('runtime/bundle-manifest.json', JSON.stringify({ tool: `esbuild ${bundlerVersion}`, package: manifest.name, version: manifest.version,
@@ -52,3 +53,4 @@ await writeFile('runtime/bundle-manifest.json', JSON.stringify({ tool: `esbuild 
   outputFiles: bundled.outputFiles.map(file => path.relative(directory, file.path).replaceAll('\\', '/')) }, null, 2));
 console.log(`Prepared ${manifest.name} ${manifest.version}: ${Object.keys(bundled.metafile.inputs).length} files into ${bundled.outputFiles.length} shared ESM files`);
 await prepareWorkBuddy(resolve('runtime'));
+await prepareStartupLeaves(resolve('runtime'));
