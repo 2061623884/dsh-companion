@@ -69,6 +69,7 @@ test('bundled runtime cold-starts without desktop, shares windows and exits only
   assert.notEqual(separate.pid, a.pid); assert.notEqual(separate.port, a.port);
   independent.dispose(); await stopped(separate.pid); process.kill(a.pid, 0);
   const connection = new RuntimeConnection({ runtimeDirectory: runtime, dataHome: home, assetsDirectory: path.resolve('dist') });
+  t.after(() => connection.dispose());
   const base = await connection.start();
   assert.equal((await fetch(base + '/?dsh-companion=1')).status, 200);
   clients[0].dispose(); await sleep(5300); process.kill(a.pid, 0);

@@ -1,5 +1,12 @@
 # Independent bundled runtime (0.3.0)
 
+## Hosted CI follow-up
+
+Review baseline: 03e3b89a1b9a80531f8497b020da95071887e4f8 to the working tree. Push the approved source-only CI changes and verify the actual hosted checks. Correct confirmed failures and rerun; no installation package build/upload/publication, personal configuration, credentials or real test data.
+
+- Investigate the first hosted run's 401/RUNTIME_AUTH_FAILED results and integration-worker non-exit. Keep request authentication, HMAC/authority checks, the five-minute signed lifetime and no-replay behavior. Accommodate a small receiver clock lag at signing, using a deterministic real-runtime regression that changes only a synthetic child process's Date.now.
+- Ensure the cold-start integration test releases its connection even if startup/assertions fail. Do not force-exit the test runner, ignore errors or increase timeouts to claim success. Record the actual hosted outcome and distinguish observed CI errors from a simulated clock offset; no precise VM clock skew was captured.
+
 ## GitHub checks, stage one
 
 Review baseline: 7608f3c56ca8a08d89918ba4ac1b02ebf7a534a4 to the working tree. Implement the approved checking stage only; no commit, push, branch-rule changes, installation package build/upload, Release or Marketplace publication.

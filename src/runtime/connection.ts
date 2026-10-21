@@ -113,7 +113,9 @@ export class RuntimeConnection {
   }
 
   private cookie(target: Target, authority: string): string {
-    const now = Date.now();
+    // A receiver may observe an older clock tick. Keep the signed lifetime at
+    // five minutes while avoiding a freshly signed cookie dated in its future.
+    const now = Date.now() - 1000;
     const body = Buffer.from(JSON.stringify({ version: 1, authority, issuedAt: now, expiresAt: now + 300000 })).toString('base64url');
     return `dsh-auth-${createHash('sha256').update(authority).digest('base64url')}=v1.${body}.${createHmac('sha256', target.secret).update(body).digest('base64url')}`;
   }

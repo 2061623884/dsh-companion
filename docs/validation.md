@@ -1,6 +1,14 @@
 # Validation: 0.3.6
 
-## GitHub checks, stage one (2026-10-21)
+## Hosted CI publication and repair (2026-10-21)
+
+The source-only CI commit 03e3b89 was pushed to main. [Hosted run 1](https://github.com/2061623884/dsh-companion/actions/runs/39565627215) passed Privacy and workflows (90 files, 25 reachable commits, no detected secrets) and Quick checks (strict checks, 27 unit tests). Windows runtime completed dependency installation/preparation, then the restart RPC returned 401 and another cold-start connection reported RUNTIME_AUTH_FAILED. That failing test lacked connection cleanup on its error path; its control lease kept the worker alive until the 20-minute job limit. Native VS Code was skipped. This run did not pass.
+
+Both original cases passed locally with CI=true. A smaller real-runtime regression then changed only a synthetic host child's Date.now by -500ms: the original implementation failed with RUNTIME_AUTH_FAILED in about 2.34 seconds. Upstream authentication rejects issuedAt values later than the receiver's current time. Backdating newly signed cookies by one second made that same regression pass in about 2.43 seconds while retaining a 300000ms encoded lifetime. The cold-start test also now registers its connection teardown before startup. No request retry, auth-verification relaxation, forced test exit or timeout increase was introduced. This proves the clock-boundary defect; no precise clock skew was captured from the original hosted VM.
+
+After repair, strict checks, all 27 unit tests, all 13 integration tests, both native VS Code 1.124.2 runners and the runtime file/version/license/dependency contracts passed locally. Independent Standards and Spec reviews each found zero remaining actionable issues. Hosted acceptance is determined by the repair commit's actual checks in the [CI workflow](https://github.com/2061623884/dsh-companion/actions/workflows/ci.yml), not inferred from these local results. No installation package is built/uploaded or published by this workflow.
+
+## Local pre-push GitHub checks, stage one (2026-10-21)
 
 Scope: working-tree changes against 7608f3c56ca8a08d89918ba4ac1b02ebf7a534a4. The source version remains 0.3.6. Product sources and runtime dependency locks are unchanged; no installed extension or desktop data was changed. No commit, push, installation package build/upload, publication or repository-rule change was performed.
 
@@ -12,7 +20,7 @@ The recorded actionlint/Gitleaks archives downloaded and passed SHA-256 verifica
 
 Anonymous HTTPS rewriting of the pinned public Git SSH dependency passed with SSH disabled and personal Git/npm configuration and GitHub/npm tokens unavailable. The subsequent clean runtime npm ci completed with 595 packages in approximately nine minutes, including the Git package's own build-dependency preparation. Registry ECONNRESET failures recovered through npm's existing retry behavior. Only the existing SHA-verified Node archive was reused; no runtime/node_modules or prepared graph was copied. Runtime preparation then verified Node and rebuilt the pinned dependency graphs. All 12 integration tests and runtime file/version/license/dependency contracts passed again on this newly prepared runtime. This establishes a clean local installation result, not a hosted-network duration guarantee.
 
-GitHub-hosted scheduling, runner desktop behavior, cache restoration and repository rules remain unverified because nothing was pushed. Local results do not imply that the workflow has already run on GitHub or that branch protection is enabled.
+At this local pre-push stage, GitHub-hosted scheduling, runner desktop behavior, cache restoration and repository rules remained unverified. Those local results did not imply a hosted run or enabled branch protection; the later hosted follow-up is recorded above.
 
 ## Cold-start file access round (0.3.6)
 

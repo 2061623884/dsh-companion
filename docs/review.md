@@ -1,5 +1,9 @@
 # Review: 0.3.6
 
+## Hosted CI repair
+
+Reviewed the working-tree follow-up against 03e3b89a1b9a80531f8497b020da95071887e4f8 using docs/spec.md's Hosted CI follow-up requirements. Independent Standards and Spec reviews each found zero remaining actionable issues. The change backdates only the owned runtime's freshly signed cookie by one second and keeps its encoded lifetime at five minutes; HMAC/authority checks and no-replay behavior remain. A real-runtime synthetic child-clock regression covers authentication discovery and RPC. The cold-start test registers connection cleanup before startup, including failure paths. No desktop data/credentials, dependency versions, installation package or workflow timeouts were changed. The actual VM clock offset was not measured; docs/validation.md distinguishes the hosted failures from the deterministic clock reproduction.
+
 ## GitHub checks, stage one
 
 Reviewed the working-tree delta against 7608f3c56ca8a08d89918ba4ac1b02ebf7a534a4, including new untracked CI files. Standards and Spec were reviewed independently by parallel agents against docs/spec.md and the repository ownership, privacy and minimal-change rules. No product modules, runtime dependency locks, installed extension or desktop data were changed.
