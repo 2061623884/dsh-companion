@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: pwsh
+
+env:
+  CI: 'true'
+  # The pinned public Git dependency has an SSH lockfile URL. Fetch it over
+  # anonymous HTTPS without provisioning keys or writing global Git config.
+  GIT_CONFIG_COUNT: '1'
+  GIT_CONFIG_KEY_0: url.https://github.com/.insteadOf
+  GIT_CONFIG_VALUE_0: ssh://git@github.com/
+
+jobs:
+  privacy:
+    name: Privacy and workflows
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Read pinned Node version
+        id: node
+        run: '"version=$((Get-Content runtime/node-version.json -Raw | ConvertFrom-Json).version)" >> $env:GITHUB_OUTPUT'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: ${{ steps.node.outputs.version }}
+      - name: Check source inventory and personal paths
+        run: node scripts/check-source.mjs
+      - name: Prepare verified check tools
+        run: ./scripts/prepare-ci-tools.ps1
+      - name: Check workflow syntax
+        run: '& ./.test-work/ci-tools/actionlint/actionlint.exe -oneline'
+      - name: Scan history for secrets
+        run: '& ./.test-work/ci-tools/gitleaks/gitleaks.exe git --log-opts=--all --redact=100 --no-banner --exit-code=1'
+
+  quick:
+    name: Quick checks
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Read pinned Node version
+        id: node
+        run: '"version=$((Get-Content runtime/node-version.json -Raw | ConvertFrom-Json).version)" >> $env:GITHUB_OUTPUT'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: ${{ steps.node.outputs.version }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run check
+      - run: npm test
+
+  runtime:
+    name: Windows runtime
+    needs: [privacy, quick]
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Read pinned Node version
+        id: node
+        run: '"version=$((Get-Content runtime/node-version.json -Raw | ConvertFrom-Json).version)" >> $env:GITHUB_OUTPUT'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: ${{ steps.node.outputs.version }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            runtime/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run prepare-runtime
+      - run: npm run test:integration
+      - name: Check prepared runtime contracts
+        run: node scripts/check-runtime.mjs
+
+  native:
+    name: Native VS Code
+    needs: runtime
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Read pinned Node version
+        id: node
+        run: '"version=$((Get-Content runtime/node-version.json -Raw | ConvertFrom-Json).version)" >> $env:GITHUB_OUTPUT'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: ${{ steps.node.outputs.version }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            runtime/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run prepare-runtime
+      - name: Prepare pinned VS Code
+        run: node scripts/prepare-native-ci.mjs
+      - run: npm run test:native

@@ -1,5 +1,15 @@
 # Independent bundled runtime (0.3.0)
 
+## GitHub checks, stage one
+
+Review baseline: 7608f3c56ca8a08d89918ba4ac1b02ebf7a534a4 to the working tree. Implement the approved checking stage only; no commit, push, branch-rule changes, installation package build/upload, Release or Marketplace publication.
+
+- Run independent fast checks and source/privacy/workflow checks on pull requests, main pushes and manual dispatch, on GitHub-hosted Windows. Use Node from existing pinned runtime metadata. Keep the fast gate free of DSH runtime preparation.
+- Run the existing real-runtime integration/preflight gates after the fast/privacy gates pass. Use clean pinned dependency preparation and existing synthetic fixtures, with no real model/account or desktop data. Run existing native acceptance on main/manual main, with a downloaded fixed VS Code version and isolated profiles. Do not claim hosted execution until it actually happens.
+- Give the workflow read-only contents permission, disable checkout credential persistence, pin Actions to full verified commit SHAs, and verify downloaded check tools against recorded SHA-256 values. Do not run fork code through pull_request_target, publish artifacts, log secret values or upload raw test directories. Cache only npm downloads, never a patched runtime/home.
+- Make source inventory/home-path privacy checks runnable locally. Preserve existing public metadata, licenses and synthetic fixtures while rejecting generated/private entries. Preserve all product behavior and desktop ownership. Keep failure codes visible without including offending source text or personal paths.
+- Document triggers, local validation, remaining hosted-run uncertainty and the three PR-applicable required checks to select only after a successful hosted run. Review Standards and Spec independently and correct confirmed findings. Release/version-naming work belongs to a later stage.
+
 ## Cold-start file access round (0.3.6)
 
 Review against the saved 0.3.5 source snapshot, preserving previous uncommitted stages. No commit, push or publication.

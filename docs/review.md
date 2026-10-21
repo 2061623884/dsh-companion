@@ -1,5 +1,13 @@
 # Review: 0.3.6
 
+## GitHub checks, stage one
+
+Reviewed the working-tree delta against 7608f3c56ca8a08d89918ba4ac1b02ebf7a534a4, including new untracked CI files. Standards and Spec were reviewed independently by parallel agents against docs/spec.md and the repository ownership, privacy and minimal-change rules. No product modules, runtime dependency locks, installed extension or desktop data were changed.
+
+Standards: one confirmed finding resolved, zero remaining. The source privacy expression initially missed a literal user home root without a following separator. It now detects both Windows separators and Unix/macOS home roots; synthetic regression cases cover the omission. The CI tooling stays in small preparation/check scripts; existing build, integration and native runners remain the behavior owners. Native editor preparation now preserves underlying download errors instead of suppressing them through SilentReporter.
+
+Spec: one confirmed finding resolved, zero remaining. The existing pinned public WorkBuddy Git dependency used an SSH URL; workflow-scoped Git environment entries now translate it to anonymous HTTPS without modifying the lockfile revision or contributor Git configuration. A credential-free isolated environment with SSH disabled verified that transport. Read-only permissions, non-persistent checkout credentials, full Action commit pins, verified tool archives, npm-only caches and native main-only triggering were retained. There is no packaging/upload/publication step or repository-rule mutation. Local execution evidence and its hosted-run limits are recorded in docs/validation.md.
+
 ## Cold-start file access round: 0.3.6
 
 Reviewed against the preserved 0.3.5 source snapshot, excluding earlier uncommitted reliability/maintainability work from this round's delta. HEAD remains d78e3ef45aab2065aadb37a14d7b5ef8111f4d9f; no new commit or push. Standards and Spec were reviewed independently by parallel agents against docs/spec.md and the ownership, privacy and minimal-change rules.
