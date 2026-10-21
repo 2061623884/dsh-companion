@@ -21,6 +21,6 @@ All runtime packages are included in the VSIX; first use does not download the c
 
 ## Design and verification
 
-See docs/spec.md, docs/architecture.md, docs/validation.md and docs/adr/0001-independent-runtime.md. Runtime lifecycle, editor context, references and sidebar UI have separate module interfaces. Tests do not call paid models. This project is locally developed and has not been published by this task.
+See docs/spec.md, docs/architecture.md, docs/validation.md and docs/adr/0001-independent-runtime.md. Runtime lifecycle, editor context, references and sidebar UI have separate module interfaces. Tests do not call paid models.
 
 Authorization discovery uses each user's DSH_HOME/home directory and VS Code storage, with no developer account or machine path embedded. WorkBuddy is the first provider adapter; future integrations belong beside it in the runtime. See [privacy and publication rules](docs/privacy.md) for supported scope, extension placement, sensitive-file exclusions and local pre-publication scans.
