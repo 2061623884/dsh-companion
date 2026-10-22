@@ -78,9 +78,12 @@ for (const version of new Set([minimum, vscodeVersion])) {
   const sessions = path.join(profile, 'User/globalStorage', metadata.id, 'dsh/sessions');
   const headers = await Promise.all((await readdir(sessions, { recursive: true })).filter(file => file.endsWith('session.v4.jsonl.zstd'))
     .map(async file => JSON.parse(zstdDecompressSync(await readFile(path.join(sessions, file))).toString('utf8').split('\n')[0])));
-  result.workspaceBound = headers.length === 1 && headers[0].cwd?.toLowerCase() === path.join(fixture.directory, 'b').toLowerCase();
+  // First-use UI can also create an empty default session. Check the session actually submitted.
+  const submitted = headers.filter(header => header.id === result.promptSessionId);
+  result.workspaceBound = submitted.length === 1 && submitted[0].cwd?.toLowerCase() === path.join(fixture.directory, 'b').toLowerCase();
   if (result.vscodeVersion !== version || !result.installedPackage || !result.workspaceBound || !result.unsavedReference ||
-    !result.draftRestored || !result.desktopUnchanged || !result.ownedRuntimeExited || result.interceptedPrompts !== 1 || result.generationCalls !== 0) throw new Error('RELEASE_INSTALLED_SMOKE_INCOMPLETE');
+    !result.draftRestored || !result.desktopUnchanged || !result.ownedRuntimeExited || !result.sharedLogin || !result.sharedSignOut || !result.loadingDismissed ||
+    result.interceptedPrompts !== 1 || result.generationCalls !== 0) throw new Error('RELEASE_INSTALLED_SMOKE_INCOMPLETE');
   results.push(result); console.log('Installed VSIX acceptance passed: VS Code ' + version);
 }
 if (createHash('sha256').update(await readFile(archive)).digest('hex') !== sha256) throw new Error('RELEASE_ARCHIVE_CHANGED_DURING_TEST');

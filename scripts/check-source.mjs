@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 /** @param {string} content */
 export function hasPersonalHomePath(content) {
-  return /[a-z]:[\\/]+Users[\\/]+[^\\/\s"'<>]+|\/(?:home|Users)\/+[^/\s"'<>]+/i.test(content);
+  return /[a-z]:[\\/]+Users[\\/]+[^\\/\s"'<>]+|(?<![a-z0-9_.-])\/(?:home|Users)\/+[^/\s"'<>]+/i.test(content);
 }
 
 /** Source/distribution privacy policy; return only a safe diagnostic code.

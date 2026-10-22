@@ -6,6 +6,8 @@ import { spawn } from 'node:child_process';
 import { readFile, realpath } from 'node:fs/promises';
 
 export interface RuntimeAddress { pid: number; port: number }
+/** The desktop DSH home: migration source and owner of the shared credential store. */
+export function defaultDesktopHome(): string { return process.env.DSH_HOME || path.join(os.homedir(), '.dsh'); }
 interface RuntimeFailure { stage: string; code: string; errorName?: string; frames?: string[]; pid?: number; version?: string }
 type ControlMessage = RuntimeFailure & { type: 'error' } | { type: 'starting'; stage: string } |
   { type: 'stopping' } | { type: 'ready'; version: string; pid: number; port: number };
@@ -26,6 +28,8 @@ function failureOf(message: RuntimeFailure): Error {
     ? '迁移记录损坏，现有数据已保留。请从备份恢复 migration.json，不要删除数据目录'
     : message.code === 'DSH_RUNTIME_VERSION_IN_USE'
     ? '其他 VS Code 窗口仍在使用旧版 DSH 后台，请重新加载这些窗口后重试'
+    : message.code === 'DSH_ACCOUNT_PLATFORM_MISMATCH'
+    ? 'DSH 平台地址与共享登录不一致，登录记录已保留。请统一桌面端和插件的账号平台配置后重试'
     : `DSH ${message.stage}失败`;
   const failure = new Error(`${description} (${message.code}, ${message.errorName || 'RuntimeError'})`);
   failure.stack = failure.message + '\n' + (message.frames || []).join('\n');
@@ -37,7 +41,7 @@ export class RuntimeClient {
   private pending: Promise<RuntimeAddress> | undefined;
   private closed = false;
   constructor(private readonly directory: string, private readonly home: string,
-    private readonly sourceHome = process.env.DSH_HOME || path.join(os.homedir(), '.dsh')) {}
+    private readonly sourceHome = defaultDesktopHome()) {}
 
   acquire(): Promise<RuntimeAddress> {
     if (this.closed) return Promise.reject(new Error('DSH 运行连接已释放'));

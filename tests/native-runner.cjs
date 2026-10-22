@@ -27,7 +27,7 @@ exports.run = async () => {
   received.fire({ type: 'read-reference', uri: uri.toString(), requestId: 'native-1' });
   await new Promise(resolve => setTimeout(resolve, 10));
   assert.match(messages.find(message => message.requestId === 'native-1').value.content, /UNSAVED_CONTEXT/);
-  assert.match(frameHtml('http://127.0.0.1:12345'), /event\.origin\s*!==\s*window\.origin/);
+  assert.match(frameHtml('http://127.0.0.1:12345', path.join(root, 'media/whale.svg')), /event\.origin\s*!==\s*window\.origin/);
   sidebar.dispose(); context.dispose(); received.dispose(); disposed.dispose();
   // Exercise the shipped wrapper in an actual VS Code webview, not a simulated window.postMessage.
   const bridgeContext = new EditorContext(), http = require('node:http'), bridgeEvents = [];
@@ -54,7 +54,7 @@ if(data.type==='reference-result'&&data.requestId==='real-transport'&&data.value
         if (message.type === 'read-reference') await panel.webview.postMessage({ type: 'reference-result', requestId: message.requestId, value: await bridgeContext.read(message.uri) });
         if (message.type === 'trace' && message.stage === 'reference-roundtrip') { clearTimeout(timeout); bridgeMs = Math.round(performance.now() - started); resolve(); }
       });
-      panel.webview.html = frameHtml(`http://127.0.0.1:${server.address().port}`);
+      panel.webview.html = frameHtml(`http://127.0.0.1:${server.address().port}`, path.join(root, 'media/whale.svg'));
     });
   } finally { panel.dispose(); bridgeContext.dispose(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
   await vscode.commands.executeCommand('dshCompanion.open');

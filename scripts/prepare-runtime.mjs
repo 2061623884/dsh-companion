@@ -5,6 +5,7 @@ import path, { resolve, join } from 'node:path';
 import { build, version as bundlerVersion } from 'esbuild';
 import { prepareWorkBuddy } from './prepare-workbuddy.mjs';
 import { prepareStartupLeaves } from './prepare-startup-leaves.mjs';
+import { prepareSharedLogin } from './prepare-shared-login.mjs';
 
 if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('Packaging requires Windows x64');
 const { version, archiveSha256: expected } = JSON.parse(await readFile('runtime/node-version.json', 'utf8'));
@@ -53,4 +54,5 @@ await writeFile('runtime/bundle-manifest.json', JSON.stringify({ tool: `esbuild 
   outputFiles: bundled.outputFiles.map(file => path.relative(directory, file.path).replaceAll('\\', '/')) }, null, 2));
 console.log(`Prepared ${manifest.name} ${manifest.version}: ${Object.keys(bundled.metafile.inputs).length} files into ${bundled.outputFiles.length} shared ESM files`);
 await prepareWorkBuddy(resolve('runtime'));
+await prepareSharedLogin(resolve('runtime'));
 await prepareStartupLeaves(resolve('runtime'));

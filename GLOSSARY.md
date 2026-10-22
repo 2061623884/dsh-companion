@@ -7,11 +7,14 @@ The VS Code client and its independently owned DSH execution environment.
 **Companion runtime**: The DSH Web core owned by Companion, shared by VS Code windows using the same data home.
 _Avoid_: desktop backend, hidden desktop
 
-**Companion home**: The independent configuration, credentials, sessions and attachment data used by Companion.
+**Companion home**: The independent configuration, sessions and attachment data used by Companion.
 _Avoid_: desktop profile
 
-**Desktop home**: The existing desktop DSH data, used read-only during migration and for borrowed WorkBuddy access tokens.
+**Desktop home**: The existing desktop DSH data, used read-only during migration and for borrowed WorkBuddy access tokens, and the owner of the shared credential store.
 _Avoid_: shared home
+
+**Shared credential store**: Desktop home's `.credentials.yaml`, read and written by desktop DSH and the Companion runtime alike, so one sign-in serves both.
+_Avoid_: credential copy, credential sync
 
 **Migration snapshot**: The initial copy of compatible configuration and historical data, with a recorded set of skipped session IDs.
 _Avoid_: synchronization, shared history

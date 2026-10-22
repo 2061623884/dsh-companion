@@ -36,7 +36,7 @@ export function createEditorBridge(listeners: Listeners) {
   }
   window.addEventListener('message', onMessage);
   return {
-    readReference, trace, ready: () => post('hello'),
+    readReference, trace, ready: () => post('hello'), rendered: () => post('ui-ready'),
     dispose() {
       window.removeEventListener('message', onMessage);
       for(const finish of pending.values()) finish(undefined, new Error('DSH 页面已关闭'));

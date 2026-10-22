@@ -13,7 +13,7 @@ if (!code) {
 }
 await access(code);
 const root = process.cwd(), fixture = await prepareTestWorkspace(root), execute = promisify(execFile);
-for (const [entry, resultFile] of [['native-runner.cjs', 'native-result.json'], ['native-reliability.cjs', 'native-reliability-result.json']]) {
+for (const [entry, resultFile] of [['native-runner.cjs', 'native-result.json'], ['native-reliability.cjs', 'native-reliability-result.json'], ['native-loading.cjs', 'native-loading-result.json']]) {
   const started = Date.now();
   await execute(code, ['--new-window', '--disable-workspace-trust', '--skip-welcome', '--skip-release-notes',
     '--user-data-dir', path.join(fixture.directory, entry + '-profile'), '--extensions-dir', path.join(fixture.directory, 'extensions'),
@@ -22,7 +22,9 @@ for (const [entry, resultFile] of [['native-runner.cjs', 'native-result.json'], 
   const resultPath = path.join(root, '.test-work', resultFile), info = await stat(resultPath);
   if (info.mtimeMs < started) throw new Error('Native acceptance did not write a fresh result: ' + entry);
   const result = JSON.parse(await readFile(resultPath, 'utf8'));
-  if (entry === 'native-runner.cjs' ? result.actualWebviewRoundtrip !== true : result.ownedRuntimeExited !== true || result.cases.length !== 2) {
+  if (entry === 'native-runner.cjs' ? result.actualWebviewRoundtrip !== true :
+    entry === 'native-loading.cjs' ? result.cases.length !== 2 :
+    result.ownedRuntimeExited !== true || result.cases.length !== 2) {
     throw new Error('Native acceptance did not complete: ' + entry);
   }
   console.log(entry + ': passed');

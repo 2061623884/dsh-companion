@@ -1,5 +1,26 @@
 # Independent bundled runtime (0.3.0)
 
+## Shared desktop credential store
+
+Approved direction: Companion shares sign-in with desktop DSH the way the Codex extension shares its CLI login. No commit, push or publication.
+
+- The Companion runtime uses desktop home's `.credentials.yaml` as its credential store via a host-written overlay; Companion home holds no credential copy. Sign-in, sign-out and API-key changes on either side apply to the other through the pinned store's cross-process lock and watched reload. Existing migrated homes adopt this on next boot.
+- Migration no longer copies credentials. Sessions, settings and the WorkBuddy adapter are unchanged.
+- Test with synthetic stores only: the desktop browser grant authenticates Companion's connection; a desktop DeepSeek account grant reads as signed in without a Companion login, and its removal on desktop signs Companion out live; cold start without desktop creates the store where desktop would own it. Never read or write the developer's real store in tests.
+- Companion's pinned account initializer must preserve a grant whose issuer differs from its resolved platform origin. Report `DSH_ACCOUNT_PLATFORM_MISMATCH` to the editor and stop startup without exposing the grant or changing the origin; matching the account configuration must allow retry with the original grant. Prepare this narrow upstream change only in the bundled runtime and require it at packaging preflight.
+- Run integration files sequentially to avoid unrelated complete-runtime startups contending for resources; preserve each test's deadlines and explicit concurrent-client assertions. Verify shared sign-in and extension-side sign-out through the actual installed sidebar in isolated VS Code profiles using synthetic credentials and intercepted network calls. Generate a new local package without installing into the contributor's normal profile, committing, pushing or publishing.
+
+## Local release materials and dry run
+
+Review baseline: b2a684e8140b2eab5eab37111dba3bc1871e17ee to the working tree including new files. Implement local candidate material generation, integrity/source checks and a read-only publication rehearsal. No commit, push, package upload, tag, Release or product/desktop changes.
+
+- Reuse the exact VSIX after archive/privacy and installed-package acceptance; never rebuild or change its version during candidate preparation or rehearsal. Bind the package to its build-time Git commit, dirty state and current source-content digest; reject stale or mismatched reports/source.
+- Emit exactly the VSIX, release.json, SHA256SUMS and release-notes.md in an ignored candidate directory. The checksum list covers the VSIX and both documents. Versioned user-facing CHANGELOG content supplies notes, alongside supported platform/editor versions, installation/checksum instructions and source identity. Only allowlisted metadata/counts/hashes are copied from reports; no raw diagnostics, machine paths, credentials or source text. Scan candidate documents as well as the already scanned VSIX.
+- Local preparation is explicitly local evidence, including uncommitted work. Hosted material generation requires a clean main checkout matching the dispatch SHA and the exact CI gate receipt. This stage retains files on the runner only and adds no upload permission or step.
+- Candidate checks require expected full commit and package SHA-256 from outside the candidate; reject altered files, unexpected entries/symlinks, source/version/hash/size mismatch and incomplete evidence. Existing candidate directories may be reused only for identical content.
+- Preview is always a dry run, with no publishing implementation or write API. Offline preview does not claim verified GitHub provenance or remote version availability. Optional online preview uses GET only, verifies the exact CI/preparation runs and successful jobs on trusted main workflows, and rejects existing remote version tags/releases. Local tag conflicts also fail. Local/dirty evidence cannot pass online readiness.
+- Test source/hash/version conflicts, invalid reports, extra private data, candidate reuse/conflicts, missing files and failed/untrusted hosted runs using synthetic fixtures; retain Standards and Spec review and distinguish local validation from hosted execution.
+
 ## Release preparation: verify only
 
 Review baseline: 47957b57388ee7a75c3c2e80595ed3d38f059eee to the working tree, including new files. Implement the approved second-stage verification path only. No commit, push, artifact upload, tag, Release, Marketplace publication or desktop data/configuration changes.
@@ -77,7 +98,7 @@ Review baseline: 0a6610a8987c1cadff75605616e6576b96e151df. Review all changes si
 ## First-use migration
 
 - Preserve desktop files read-only. Atomically initialize a new Companion home; never overwrite an existing initialized home or continuously synchronize desktop configuration.
-- Import only compatible provider/model/default-route settings and API-key references/records. Exclude startup agent declarations, browser grants, connectors, schedules and other runtime state. Incompatible input must fail visibly rather than silently initialize a blank profile.
+- Import only compatible provider/model/default-route settings; credentials are shared in place, not imported (see Shared desktop credential store). Exclude startup agent declarations, connectors, schedules and other runtime state. Incompatible input must fail visibly rather than silently initialize a blank profile.
 - Include the pinned WorkBuddy model provider and compatible model/context preferences. Do not copy OAuth tokens; automatic check-in stays disabled. Preserve an existing independent Companion login. Otherwise automatically use the desktop profile's WorkBuddy access token read-only in memory, with no login prompt while usable desktop auth exists. Re-read updates, strip borrowed refresh tokens, never call refresh or write/delete desktop credentials. Reject expired/invalid borrowed credentials with a clear diagnostic. Logout while borrowing must explain read-only desktop ownership and preserve its files. Without either credential source, keep the normal provider login flow.
 - Read historical compressed logs using the pinned public DSH read-only persistence interface. Copy valid completed sessions and attachments. Skip pending inboxes, unclosed turns, incompatible logs or snapshots that change during copying, and record safe identifiers/reasons. Rebuild caches and workspace grouping from log headers; custom desktop pin/order/archive metadata is not imported.
 - On a later background startup, retry only the historical session IDs recorded as skipped in the original import. Never import newly created desktop sessions, resync configuration or overwrite existing Companion sessions. Do not automatically resume any imported work.
@@ -93,6 +114,6 @@ Review baseline: 0a6610a8987c1cadff75605616e6576b96e151df. Review all changes si
 ## Verification and delivery
 
 - Typecheck/build, automated interface tests and actual VS Code/Webview acceptance are separate gates. Routine tests make no paid model calls.
-- Cover cold start without desktop/system Node, concurrent clients, last-client shutdown, failed startup/retry, independent data, one-time import, unfinished-history exclusion, credential isolation and no automatic replay.
+- Cover cold start without desktop/system Node, concurrent clients, last-client shutdown, failed startup/retry, independent data, one-time import, unfinished-history exclusion, shared desktop credentials and no automatic replay.
 - Install the resulting local VSIX. Deliver a reproducible source archive, runtime version/license records and validation evidence. Do not publish or push.
 - Review after implementation using both Standards and Spec sub-agents; also inspect cohesion, coupling, interface leakage and speculative abstractions. Repair confirmed findings and rerun affected checks.

@@ -32,7 +32,7 @@ async function host({ pending = false, stalledBoot = false, stalledShutdown = fa
     './import.mjs': { importDesktopData: async () => { if (pending) await task; } },
     '@deepseek-ai/dsh/profile-boot': { runProfile: async () => {
       bootCalls++; if (stalledBoot) await task;
-      return { ctx: { inject(names, callback) { callback(); }, webServer: { port: 12345 } },
+      return { ctx: { inject(names, callback) { callback(); }, webServer: { port: 12345 }, loader: { entries: () => [] } },
         shutdown: { shutdown() { shutdowns++; return stalledShutdown ? new Promise(() => {}) : Promise.resolve(); } } };
     } },
     '@deepseek-ai/dsh-app-boot': { loadProfileDirectory() { return {}; }, loadLayeredEnv() { return {}; } },

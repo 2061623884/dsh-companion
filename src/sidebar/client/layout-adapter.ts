@@ -32,10 +32,12 @@ const tokenMap = {
   '--dsw-alias-turn-trigger-bg': 'widgetBackground', '--dsw-alias-turn-trigger-bg-hover': 'hover',
 };
 export function createSidebarLayout(ctx: DshContext, syncInput: (reference: EditorReference | null, blocked: boolean) => void,
-  trace: (stage: string, durationMs: number) => void) {
+  trace: (stage: string, durationMs: number) => void, rendered: () => void) {
   const body = document.body;
   body.dataset.dshCompanion = 'sidebar';
   const css = document.createElement('link');
+  let stylesReady = false, themeReady = false, renderedOnce = false;
+  css.addEventListener('load', () => { stylesReady = true; scheduleSync(); }, { once: true });
   css.rel = 'stylesheet'; css.href = '/__dsh_companion/sidebar.css';
   document.head.append(css);
   const header = document.createElement('nav');
@@ -122,7 +124,7 @@ export function createSidebarLayout(ctx: DshContext, syncInput: (reference: Edit
     if(observedFrame !== root) {
       observer.disconnect();
       observer.observe(body, { childList: true });
-      observer.observe(root, { subtree: true, attributes: true, attributeFilter: ['data-sidebar-collapsed', 'data-sidebar-right-open'] });
+      observer.observe(root, { childList: !renderedOnce, subtree: true, attributes: true, attributeFilter: ['data-sidebar-collapsed', 'data-sidebar-right-open'] });
       observedFrame = root;
     }
     if(!root.hasAttribute('data-dsh-companion-frame')) {
@@ -143,7 +145,13 @@ export function createSidebarLayout(ctx: DshContext, syncInput: (reference: Edit
     const showBack = navigationOpen() || isPanel || !!settings || rightOpen;
     if(back.hidden === showBack) back.hidden = !showBack;
     syncEditorContext();
-
+    if(!renderedOnce && stylesReady && themeReady && editorContext && !bindingPending &&
+      (bindingError || document.querySelector('[data-composer-input], [role="dialog"]'))) {
+      renderedOnce = true;
+      // Stop observing initial rendering once the usable page is under the loading overlay.
+      observer.disconnect(); observedFrame = null; scheduleSync();
+      rendered();
+    }
   }
   let scheduled = false, animation = 0, disposed = false;
   function scheduleSync() {
@@ -177,6 +185,7 @@ export function createSidebarLayout(ctx: DshContext, syncInput: (reference: Edit
     body.toggleAttribute('data-ds-dark-theme', dark === true);
     body.toggleAttribute('data-dsh-companion-contrast', contrast === true);
     body.style.colorScheme = dark ? 'dark' : 'light';
+    themeReady = true; scheduleSync();
   }
   ctx.layout.closeRightbar(); scheduleSync();
   return {

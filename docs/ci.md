@@ -47,6 +47,8 @@ $env:VSCODE_EXECUTABLE = (Get-Content $env:GITHUB_ENV | Select-Object -Last 1).S
 npm run test:native
 ```
 
+Integration files run with `--test-concurrency=1`: each can launch full DSH processes, so unrelated cold starts must not compete for the same startup budget. Concurrent-window and owner-handoff behavior remain exercised inside their tests, with the original per-test deadlines.
+
 check:source examines the tracked and non-ignored working source candidate, excluding tracked deletions. It rejects known generated/private locations, credential filenames, compiled/distribution/raw-data formats and literal Windows/macOS/Linux home paths. It reports only safe reason codes/counts, never offending contents/paths. It complements Gitleaks; neither check proves every arbitrary JSON fixture is synthetic, so normal code review still checks data provenance. Public dependency metadata and copyright notices remain valid source material.
 
 The native runner uses synthetic workspaces/authorization and intercepted prompts, never a contributor's desktop home or account. Only short pass/fail summaries are logged. Raw .test-work results, profiles and network fixtures remain local to the ephemeral runner. Cold-start duration is a diagnostic observation, not a fixed CI speed threshold; dependency file-read budgets and behavior contracts remain enforced.

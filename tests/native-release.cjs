@@ -9,6 +9,11 @@ exports.run = async () => {
   assert.ok(extension, 'VSIX extension must be installed');
   assert.equal(path.dirname(extension.extensionPath).toLowerCase(), process.env.DSH_RELEASE_EXTENSIONS.toLowerCase());
   const desktopFixture = await prepareWorkBuddyProfile(desktop);
+  const sharedStore = path.join(desktop, '.credentials.yaml');
+  await fs.writeFile(sharedStore, JSON.stringify({ version: 1, refs: {}, records: {
+    'deepseek-account-platform/default': { kind: 'grant', payload: { version: 1,
+      token: 'synthetic-native-token', issuer: 'https://platform.deepseek.com' } },
+  } }));
   const previous = process.env.NODE_OPTIONS, networkFile = path.join(desktop, 'network.json');
   process.env.NODE_OPTIONS = '--import=' + pathToFileURL(path.join(root, 'tests/workbuddy-network-fixture.mjs'));
   process.env.DSH_WORKBUDDY_TEST_NETWORK = networkFile;
@@ -21,6 +26,8 @@ exports.run = async () => {
     const chunks = []; for await (const chunk of request) chunks.push(chunk); const body = Buffer.concat(chunks).toString('utf8');
     assert.ok(body.includes('RELEASE_SEND_SENTINEL'), 'only a synthetic prompt may be intercepted');
     probe.prompts++; probe.hasSelection = body.includes('UNSAVED_RELEASE_CONTEXT');
+    result.promptSessionId = JSON.parse(body).payload.args.request.sessionId;
+    assert.equal(typeof result.promptSessionId, 'string');
     await delay(800); response.setHeader('Content-Type', 'application/json');
     response.end(JSON.stringify({ type: 'server-response', rpcId: JSON.parse(body).rpcId,
       result: { ok: false, error: { code: 'test/intercepted', message: 'Synthetic failure' } } }));
@@ -73,6 +80,26 @@ exports.run = async () => {
     await send('Runtime.enable', {}, session);
     result.phase = 3;
     await until(async () => evaluate(`!!document.querySelector('#dsh-companion-toolbar')`), 'toolbar');
+    // The first-use dialog must be reachable through the real loading overlay.
+    const wrapperTarget = await until(async () => (await send('Target.getTargets')).targetInfos.find(value =>
+      value.type === 'iframe' && value.url.startsWith('vscode-webview://') && value.url.includes('extensionId=' + id)), 'wrapper');
+    const wrapperSession = (await send('Target.attachToTarget', { targetId: wrapperTarget.targetId, flatten: true })).sessionId;
+    await until(async () => {
+      result.loadingPage = await evaluate(`({ layout:!!document.querySelector('[data-dsh-companion-frame]'),
+        dialog:!!document.querySelector('[role="dialog"]'), composer:!!document.querySelector('[data-composer-input]'),
+        stylesheet:[...document.querySelectorAll('link')].some(link=>link.href.includes('/__dsh_companion/sidebar.css')&&!!link.sheet),
+        theme:!!document.body.style.getPropertyValue('--dsh-companion-background'),
+        workspacePending:document.querySelector('#dsh-companion-context')?.textContent==='正在连接工作区…' })`);
+      const response = await send('Runtime.evaluate', { expression: `(() => {
+        const content=document.getElementById('active-frame').contentDocument;
+        const loader=content.getElementById('dsh-companion-loading'), frame=content.querySelector('iframe');
+        return { loaderPresent:!!loader, hidden:!!loader&&getComputedStyle(loader).visibility==='hidden', chatInteractive:!!frame&&!frame.inert };
+      })()`, returnByValue: true }, wrapperSession);
+      assert.equal(response.exceptionDetails, undefined, 'Loading probe must inspect the actual webview document');
+      result.loadingOverlay = response.result.value;
+      return result.loadingOverlay?.hidden && result.loadingOverlay?.chatInteractive;
+    }, 'loading-overlay-dismissed');
+    result.loadingDismissed = true;
     // Confirm the normal first-use acknowledgement can be saved in the installed runtime.
     await until(async () => evaluate(`(() => { const button=[...document.querySelectorAll('button')].find(b=>/^(继续|Continue)$/.test(b.textContent.trim()));return !!button&&!button.disabled; })()`), 'welcome-ready');
     await evaluate(`[...document.querySelectorAll('button')].find(b=>/^(继续|Continue)$/.test(b.textContent.trim())).click(); true`);
@@ -106,10 +133,30 @@ exports.run = async () => {
     result.phase = 10;
     assert.equal(probe.hasSelection, true); assert.equal(probe.prompts, 1);
     result.interceptedPrompts = probe.prompts; result.unsavedReference = true; result.draftRestored = true;
+    // Use the installed sidebar's same-origin RPC and actual shared store.
+    const account = method => evaluate(`(async () => {
+      const method = ${JSON.stringify(method)};
+      const args = method === 'signOut' ? {client:{version:${JSON.stringify(extension.packageJSON.version)},locale:'en',timezoneOffsetSeconds:0}} : {};
+      const response = await fetch('/api/account/' + method, { method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({type:'client-request',rpcId:'native-shared-' + method,method:'account/' + method,payload:{args}}) });
+      const result = (await response.json()).result;
+      if (!result.ok) throw new Error('Shared account RPC failed');
+      return result.value.status;
+    })()`);
+    assert.equal(await account('getState'), 'credential-stored');
+    await assert.rejects(fs.access(path.join(actualHome, '.credentials.yaml')), { code: 'ENOENT' });
+    result.sharedLogin = true;
+    assert.equal(await account('signOut'), 'signed-out');
+    const shared = require('../node_modules/js-yaml').load(await fs.readFile(sharedStore, 'utf8'));
+    assert.equal(shared.records['deepseek-account-platform/default'], undefined);
+    assert.ok(shared.records['client-connection/browser-session']);
+    result.sharedSignOut = true;
+    await until(async () => JSON.parse(await fs.readFile(networkFile, 'utf8')).some(request => request.path === '/auth-api/v0/users/logout'), 'synthetic-sign-out');
     const requests = JSON.parse(await fs.readFile(networkFile, 'utf8'));
-    const readRequests = new Set(['GET /console/enterprises/personal/models', 'POST /v2/billing/meter/get-user-resource']);
-    result.generationCalls = requests.filter(request => !readRequests.has(request.method + ' ' + request.path)).length;
-    assert.equal(result.generationCalls, 0, 'only model catalog and billing reads may reach the runtime network fixture');
+    const allowedRequests = new Set(['GET /models', 'GET /console/enterprises/personal/models', 'POST /v2/billing/meter/get-user-resource',
+      'GET /auth-api/v0/users/current', 'GET /api/v0/users/get_user_summary', 'GET /api/v0/users/get_unnotified_bonuses', 'POST /auth-api/v0/users/logout']);
+    result.generationCalls = requests.filter(request => !allowedRequests.has(request.method + ' ' + request.path)).length;
+    assert.equal(result.generationCalls, 0, 'only catalog/account reads and synthetic sign-out may reach the network fixture');
     assert.equal(requests.filter(request => /refresh/.test(request.path) || request.refreshHeader).length, 0);
   } finally {
     result.interceptedPrompts = probe.prompts;

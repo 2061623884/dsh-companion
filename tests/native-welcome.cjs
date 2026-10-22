@@ -23,9 +23,9 @@ exports.run = async () => {
   }, 100);
 })();`);
   const runtime = path.join(vscode.extensions.getExtension('local-development.dsh-companion').extensionPath, 'runtime');
-  const home = path.join(directory, 'home');
-  const client = new RuntimeClient(runtime, home, path.join(directory, 'no-source'));
-  const connection = new RuntimeConnection({ runtimeDirectory: runtime, dataHome: home, assetsDirectory: directory, acquire: () => client.acquire() });
+  const home = path.join(directory, 'home'), source = path.join(directory, 'no-source');
+  const client = new RuntimeClient(runtime, home, source);
+  const connection = new RuntimeConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: directory, acquire: () => client.acquire() });
   let panel; const traces = [];
   try {
     const started = performance.now(), base = await connection.start();
@@ -39,7 +39,7 @@ exports.run = async () => {
         if (message.stage === 'welcome-dismissed') { clearTimeout(timer); resolve(); }
         if (message.stage === 'welcome-failed') { clearTimeout(timer); reject(new Error('Preview confirmation could not be saved')); }
       });
-      panel.webview.html = frameHtml(base);
+      panel.webview.html = frameHtml(base, path.join(root, 'media/whale.svg'));
     });
     const response = await fetch(base + '/api/settings/describe', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: base },
       body: JSON.stringify({ type: 'client-request', rpcId: require('node:crypto').randomUUID(), method: 'settings/describe', payload: { args: {} } }) });

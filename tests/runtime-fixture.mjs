@@ -11,7 +11,7 @@ const persistence = await import(pathToFileURL(base.resolve('@deepseek-ai/dsh-se
 const ctx = new Context();
 await fs.mkdir(path.join(source, 'profiles/desktop/.dsh-workbuddy-connect'), { recursive: true });
 await fs.writeFile(path.join(source, '.credentials.yaml'), JSON.stringify({ version: 1, refs: { FIXTURE_API_KEY: 'fixture-only' }, records: {
-  'client-connection/browser-session': { kind: 'grant', payload: { version: 1, secret: 'do-not-import' } },
+  'client-connection/browser-session': { kind: 'grant', payload: { version: 1, secret: Buffer.alloc(32, 7).toString('base64url') } },
 } }));
 await fs.writeFile(path.join(source, 'profiles/desktop/cordis.patch.yml'), JSON.stringify([
   { id: 'agent-default-model', name: '@deepseek-ai/dsh-agent-default-model', config: { provider: 'fixture', model: 'fixture', agents: [{ resumeSessionId: 'pending' }] } },

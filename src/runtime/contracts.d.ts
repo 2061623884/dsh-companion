@@ -1,7 +1,11 @@
 // Narrow contracts for the pinned public runtime features used by Companion.
 // These declarations let source checks run without installing the DSH tree.
 export interface RuntimeApp {
-  ctx: { inject(names: string[], ready: () => void): void; webServer: { port: number } };
+  ctx: {
+    inject(names: string[], ready: () => void): void;
+    webServer: { port: number };
+    loader: { entries(): Iterable<{ options: { name: string }; disabled: boolean; fiber?: { await(): Promise<void> } }> };
+  };
   shutdown: { shutdown(code: number): Promise<void> };
 }
 export interface DiagnosticError extends Error { code?: string; errors?: DiagnosticError[]; cause?: DiagnosticError }

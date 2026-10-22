@@ -7,6 +7,9 @@ globalThis.fetch = async (input, init) => {
   if (['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)) return nativeFetch(input, init);
   requests.push({ path: url.pathname, method: init?.method ?? 'GET', refreshHeader: new Headers(init?.headers).has('x-refresh-token') });
   writeFileSync(process.env.DSH_WORKBUDDY_TEST_NETWORK, JSON.stringify(requests));
+  if (url.pathname === '/auth-api/v0/users/logout' && init?.method === 'POST') {
+    return Response.json({ code: 0, data: { biz_code: 0, biz_data: {} } });
+  }
   if (url.pathname === '/console/enterprises/personal/models') return Response.json({ code: 0, data: {
     models: [{ id: 'fixture-workbuddy', name: 'WorkBuddy fixture', maxInputTokens: 128000, maxOutputTokens: 8192 }],
     agents: [{ name: 'cli', models: ['fixture-workbuddy'] }] } });

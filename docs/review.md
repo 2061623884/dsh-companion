@@ -1,4 +1,12 @@
-# Review: 0.3.6
+# Review: 0.3.7
+
+## Shared login closeout
+
+Scoped source review retains the existing independent runtime, migration and provider adapters. The only new upstream adaptation replaces the pinned account initializer's mismatched-issuer deletion with an explicit error; version and source checks reject upstream drift, and packaging preflight rejects an unprepared runtime. The editor receives a bounded error without credential values or platform URLs. Account settings are not inferred from the credential. Source and synthetic fixtures cover preserved grant bytes, corrected-configuration retry, shared sign-out, lifecycle and packaging gates; original per-test deadlines and multi-client assertions remain. The native installed-package runner requires shared-login results in both supported editor versions. Publication behavior is unchanged, and previous uncommitted release work remains preserved.
+
+## Local candidate materials and rehearsal
+
+Standards and Spec independently reviewed the working-tree changes/new files against b2a684e8140b2eab5eab37111dba3bc1871e17ee and the local release-material requirements in docs/spec.md. Spec found no implementation gaps. Standards identified scan-document staging accumulation; the finally cleanup now removes only the fresh scan's files and empty directory, with both successful scan and canary rejection covered. Re-review found no remaining actionable issues. Product source, extension identity/version and desktop ownership are unchanged. The local-only generator, external expected commit/hash checks and GET-only rehearsal do not implement upload, tag or Release writes.
 
 ## Installed first-use readiness
 

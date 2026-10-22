@@ -4,7 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { RuntimeConnection } from '../runtime/connection';
 import { EditorContext } from '../context/editor-context';
 import { EditorReference, HostMessage, isClientMessage } from '../protocol';
-import { loadingHtml } from './loading';
+import { loadingHtml, loadingMarkup } from './loading';
 
 export class SidebarView implements vscode.WebviewViewProvider, vscode.Disposable {
   private view: vscode.WebviewView | undefined;
@@ -74,7 +74,7 @@ export class SidebarView implements vscode.WebviewViewProvider, vscode.Disposabl
       const base = reconnect ? await this.connection.reconnect() : await this.connection.start();
       if (generation !== this.generation) return;
       this.trace('backend-ready', performance.now() - this.loadStarted);
-      view.webview.html = frameHtml(base);
+      view.webview.html = frameHtml(base, path.join(this.extensionPath, 'media', 'whale.svg'));
     } catch (error) {
       if (generation !== this.generation) return;
       this.log.appendLine((error as Error).stack || (error as Error).message);
@@ -88,10 +88,10 @@ export class SidebarView implements vscode.WebviewViewProvider, vscode.Disposabl
 
 declare const __DSH_FRAME_BRIDGE__: string;
 
-export function frameHtml(base: string): string {
+export function frameHtml(base: string, whalePath: string): string {
   const nonce = randomBytes(18).toString('base64');
   // VS Code replaces window.parent; host messages are authenticated by the webview's origin.
-  return `<!doctype html><html><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none';frame-src ${base};script-src 'nonce-${nonce}';style-src 'unsafe-inline'"><style>html,body{padding:0;margin:0;height:100%;overflow:hidden}iframe{display:block;width:100%;height:100%;border:0}</style><body><iframe name="dsh-companion-host" title="DSH Companion" src="${base}/?dsh-companion=1"></iframe><script nonce="${nonce}">
+  return `<!doctype html><html><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none';frame-src ${base};script-src 'nonce-${nonce}';style-src 'unsafe-inline'"><style>html,body{padding:0;margin:0;height:100%;overflow:hidden}iframe{display:block;width:100%;height:100%;border:0}</style><body>${loadingMarkup(whalePath)}<iframe inert aria-busy="true" name="dsh-companion-host" title="DSH Companion" src="${base}/?dsh-companion=1"></iframe><script nonce="${nonce}">
 ${__DSH_FRAME_BRIDGE__}
 </script></body></html>`;
 }

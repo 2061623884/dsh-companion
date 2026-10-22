@@ -211,14 +211,7 @@ export async function importDesktopData(source, home, signal) {
   await fs.writeFile(path.join(profile, 'package.json'), JSON.stringify({ name: 'dsh-companion-profile', private: true,
     dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'dsh-workbuddy-connect'] } } }, null, 2));
   await fs.writeFile(path.join(profile, 'cordis.patch.yml'), dump(patches));
-  const credentials = path.join(source, '.credentials.yaml');
-  if (await exists(credentials)) {
-    const document = /** @type {{version?: number, records?: Record<string, {kind?: string}>, refs?: Record<string, string>}} */
-      (load(await fs.readFile(credentials, 'utf8'), { schema: JSON_SCHEMA }));
-    if (!document || typeof document !== 'object' || document.version !== 1) throw Object.assign(new Error('Invalid source credentials'), { code: 'DSH_IMPORT_CREDENTIAL_SCHEMA' });
-    const records = Object.fromEntries(Object.entries(document.records || {}).filter(([, record]) => record?.kind === 'api-key'));
-    await fs.writeFile(path.join(staging, '.credentials.yaml'), dump({ version: 1, refs: document.refs || {}, records }), { mode: 0o600 });
-  }
+  // Credentials are not copied: the runtime shares the desktop credential store (host.mjs).
   const wb = path.join(source, 'profiles/desktop/.dsh-workbuddy-connect/settings.json');
   const settings = await exists(wb) ? JSON.parse(await fs.readFile(wb, 'utf8')) : {};
   const preferences = Object.fromEntries(['disabledModelsCN', 'disabledModelsAI', 'useMaximumContextWindow'].filter(key => key in settings).map(key => [key, settings[key]]));

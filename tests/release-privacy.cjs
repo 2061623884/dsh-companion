@@ -3,6 +3,7 @@ const { test } = require('node:test'), assert = require('node:assert/strict'), f
 const { createHash } = require('node:crypto');
 test('the archive scanner detects vendor canaries and only accepts exact reviewed public file hashes', async t => {
   const { scanReleaseContents } = await import('../scripts/check-release.mjs');
+  const { scanCandidateDocuments } = await import('../scripts/release-candidate.mjs');
   const source = process.cwd(), root = await fs.mkdtemp(path.join(source, '.test-work/release/scanner-fixture-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const directory = path.join(root, 'archive'), tool = '.test-work/ci-tools/gitleaks/gitleaks.exe';
@@ -16,6 +17,13 @@ test('the archive scanner detects vendor canaries and only accepts exact reviewe
   const canary = 'ghp_' + createHash('sha256').update('synthetic-release-canary').digest('hex').slice(0, 36);
   await fs.writeFile(file, 'const token = ' + JSON.stringify(canary) + '; // gitleaks:allow\n');
   await assert.rejects(scanReleaseContents(root, directory), /^Error: RELEASE_SECRET_SCAN_FAILED$/);
+  const candidate = path.join(root, 'candidate'); await fs.mkdir(candidate);
+  for (const name of ['release.json', 'release-notes.md', 'SHA256SUMS']) await fs.writeFile(path.join(candidate, name), 'Synthetic public release document\n');
+  const pendingScans = async () => (await fs.readdir(path.join(root, '.test-work/release'))).filter(name => name.startsWith('doc-scan-'));
+  await scanCandidateDocuments(root, candidate); assert.deepEqual(await pendingScans(), []);
+  await fs.appendFile(path.join(candidate, 'release-notes.md'), '\nconst token = ' + JSON.stringify(canary));
+  await assert.rejects(scanCandidateDocuments(root, candidate), /^Error: RELEASE_SECRET_SCAN_FAILED$/);
+  assert.deepEqual(await pendingScans(), []);
   const record = { file: 'extension/runtime/node_modules/synthetic/example.js', sha256: createHash('sha256').update(await fs.readFile(file)).digest('hex'), rules: ['github-pat'] };
   await fs.writeFile(reviewed, JSON.stringify([record]));
   assert.equal((await scanReleaseContents(root, directory)).reviewedPublicFindings, 1);

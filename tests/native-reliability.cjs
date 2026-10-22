@@ -12,7 +12,7 @@ exports.run = async () => {
   process.env.NODE_OPTIONS = '--import=' + pathToFileURL(path.join(root, 'tests/workbuddy-network-fixture.mjs'));
   process.env.DSH_WORKBUDDY_TEST_NETWORK = requestsFile;
   const runtime = path.join(root, 'runtime'), client = new RuntimeClient(runtime, home, source);
-  const connection = new RuntimeConnection({ runtimeDirectory: runtime, dataHome: home, assetsDirectory: directory, acquire: () => client.acquire() });
+  const connection = new RuntimeConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: directory, acquire: () => client.acquire() });
   const editor = new EditorContext(), result = { vscodeVersion: vscode.version, cases: [] };
   let panel, address;
   const http = require('node:http'), net = require('node:net'), sockets = new Set();
@@ -92,7 +92,7 @@ exports.run = async () => {
             else traces.push({ stage: message.stage, durationMs: message.durationMs });
           }
         });
-        panel.webview.html = frameHtml('http://127.0.0.1:' + server.address().port);
+        panel.webview.html = frameHtml('http://127.0.0.1:' + server.address().port, path.join(root, 'media/whale.svg'));
       });
       assert.ok(samples.durationMs >= 0, 'send must visibly clear the draft while the request is still pending');
       assert.ok(samples.durationMs < 800, 'local feedback must not wait for the intercepted server response');

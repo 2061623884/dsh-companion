@@ -4,10 +4,11 @@ import * as path from 'node:path';
 import { createHash, createHmac } from 'node:crypto';
 import { Duplex } from 'node:stream';
 import { load, JSON_SCHEMA, YAMLException } from 'js-yaml';
-import { RuntimeClient, RuntimeAddress } from '../runtime/client';
+import { RuntimeClient, RuntimeAddress, defaultDesktopHome } from '../runtime/client';
 
 interface Options {
   credentialsPath?: string;
+  desktopHome?: string;
   acquire?: () => Promise<RuntimeAddress>;
   dataHome: string;
   runtimeDirectory: string;
@@ -29,9 +30,11 @@ export class RuntimeConnection {
   private readonly runtime: RuntimeClient | undefined;
   private readonly credentialsPath: string;
   constructor(private readonly options: Options) {
-    this.runtime = options.acquire ? undefined : new RuntimeClient(options.runtimeDirectory, options.dataHome);
+    const desktopHome = options.desktopHome || defaultDesktopHome();
+    this.runtime = options.acquire ? undefined : new RuntimeClient(options.runtimeDirectory, options.dataHome, desktopHome);
     this.acquire = options.acquire || (() => this.runtime!.acquire());
-    this.credentialsPath = options.credentialsPath || path.join(options.dataHome, '.credentials.yaml');
+    // The runtime keeps its browser grant in the credential store it shares with desktop DSH.
+    this.credentialsPath = options.credentialsPath || path.join(desktopHome, '.credentials.yaml');
   }
 
   start(): Promise<string> {

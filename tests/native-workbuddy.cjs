@@ -25,7 +25,7 @@ fetch('/plugins/dsh-workbuddy-connect/status').then(response=>response.json()).t
   process.env.NODE_OPTIONS = (previous || '') + ' --import=' + pathToFileURL(path.join(root, 'tests/workbuddy-readonly-guard.mjs'));
   process.env.DSH_WORKBUDDY_TEST_NETWORK = requestsFile;
   const client = new RuntimeClient(runtime, home, source);
-  const connection = new RuntimeConnection({ runtimeDirectory: runtime, dataHome: home, assetsDirectory: directory, acquire: () => client.acquire() });
+  const connection = new RuntimeConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: directory, acquire: () => client.acquire() });
   let panel, address;
   const result = { installedVersion: extension.packageJSON.version, vscodeVersion: vscode.version };
   try {
@@ -50,7 +50,7 @@ fetch('/plugins/dsh-workbuddy-connect/status').then(response=>response.json()).t
         if (message.stage === 'workbuddy-signed-in') { clearTimeout(timer); result.nativeWebviewSignedIn = true; result.nativeWebviewModelCount = message.bytes; resolve(); }
         if (message.stage === 'workbuddy-failed') { clearTimeout(timer); reject(new Error('Native WorkBuddy status was signed out')); }
       });
-      panel.webview.html = frameHtml(base);
+      panel.webview.html = frameHtml(base, path.join(root, 'media/whale.svg'));
     });
   } finally {
     panel?.dispose(); await connection.dispose(); client.dispose();

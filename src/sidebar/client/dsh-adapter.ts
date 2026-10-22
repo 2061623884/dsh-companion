@@ -13,7 +13,7 @@ window.__ModuleLoader__.load({
           reference: value => input.add(value), theme: value => layout.applyTheme(value)
         });
         const input = createInputAdapter(ctx, bridge, () => layout.scheduleSync());
-        const layout = createSidebarLayout(ctx, input.sync, bridge.trace);
+        const layout = createSidebarLayout(ctx, input.sync, bridge.trace, bridge.rendered);
         const offTheme = ctx.on('theme/change', bridge.ready);
         bridge.ready();
         return () => { offTheme(); bridge.dispose(); layout.dispose(); input.dispose(); };

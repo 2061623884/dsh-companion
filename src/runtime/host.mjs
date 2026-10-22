@@ -71,7 +71,14 @@ async function boot() {
   startup.signal.throwIfAborted();
   const installAnchor = path.join(directory, 'package.json');
   const profile = loadProfileDirectory('dsh', path.join(home, 'profiles/companion'), installAnchor);
-  return runProfile({ environment: loadLayeredEnv('dsh'), profile: 'companion', resolvedProfile: { profile, installAnchor }, patchFiles: [],
+  // Share desktop DSH's credential store, as the Codex extension shares its CLI login:
+  // one document, guarded by the store's cross-process writer lock and reloaded on change.
+  // An overlay outranks every profile layer, so existing Companion homes adopt it too.
+  // JSON is YAML; the literal path needs no `!!js`.
+  const overlay = path.join(path.dirname(home), 'credentials.patch.yml');
+  await writeFile(overlay, JSON.stringify([{ id: 'credentials', name: '@deepseek-ai/dsh-credentials-local',
+    config: { path: path.join(source, '.credentials.yaml') } }]));
+  return runProfile({ environment: loadLayeredEnv('dsh'), profile: 'companion', resolvedProfile: { profile, installAnchor }, patchFiles: [overlay],
     args: ['--no-open', '--host', '127.0.0.1', '--port', '0'],
     packageManager: { command: process.execPath, args: [path.join(directory, 'node_modules/pnpm/bin/pnpm.cjs')], env: { PATH: process.env.PATH } } });
 }
@@ -89,6 +96,11 @@ function begin() {
 /** @param {import('./contracts.js').RuntimeApp} app */
 async function publishReady({ ctx }) {
   if (stopping) return;
+  // DSH normally treats account activation failure as optional. Shared login must
+  // report that failure to the editor rather than advertise a healthy runtime.
+  for (const entry of ctx.loader.entries()) {
+    if (entry.options.name === '@deepseek-ai/dsh-deepseek-account-platform' && !entry.disabled) await entry.fiber?.await();
+  }
   stage = 'web';
   await new Promise((resolve, reject) => {
     const timeout = setTimeout(() => reject(Object.assign(new Error('Web services not ready'), { code: 'DSH_WEB_READY_TIMEOUT' })), 60000);

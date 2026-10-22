@@ -1,17 +1,22 @@
 # DSH Companion
 
-将 DeepSeek Harness 集成到 VS Code 右侧栏，在当前项目中进行 AI 对话、引用代码和使用 Agent 工具。
+在 VS Code 中使用 DeepSeek Harness（DSH）：围绕当前项目对话、引用代码，并使用 DSH 的 Agent 工具完成开发任务。
 
-插件内置独立的 DSH 运行时，打开侧栏即可自动准备后台，无需预先启动桌面应用，也无需为插件运行额外安装 Node.js。
+DSH Companion 将 DSH 的聊天与工具界面放在编辑器右侧栏，自动关联当前工作区和代码选区。安装包内置独立运行时，打开即可准备后台；已使用桌面 DSH 的用户可以共用登录，配置和会话由插件独立保存。
+
+当前版本 **0.3.8**，支持 Windows x64 和本机 VS Code。下载入口见 [GitHub Releases](https://github.com/2061623884/dsh-companion/releases/latest)，开发进度与已知限制见[项目状态](docs/status.md)。
+
+这是基于公开 DSH 组件构建的独立社区项目，与上游的品牌及第三方组件关系见[第三方说明](THIRD_PARTY_NOTICES.md)。
 
 ## 功能
 
 - **右侧栏对话**：从编辑器标题栏的鲸鱼按钮或命令面板打开，支持新建会话和浏览历史。
 - **自动关联项目**：新会话绑定当前工作区，支持多根工作区；已有会话保留原来的工作路径。
 - **代码上下文引用**：自动识别当前文件或选区，支持未保存的编辑内容，也可通过编辑器右键菜单显式引用；引用可单独移除。
-- **跟随编辑器主题**：适配窄侧栏，颜色随 VS Code 主题变化。
+- **跟随编辑器主题**：适配窄侧栏，颜色随 VS Code 主题变化；数字鲸鱼动画覆盖启动与界面加载，界面就绪后自然淡出。
 - **DSH 功能入口**：在侧栏中选择模型、使用工具，并访问插件、自动化任务和设置。
 - **后台自动管理**：同一数据目录下的多个 VS Code 窗口共享后台，最后一个连接释放后自动保存并退出。隐藏侧栏不会中断任务。
+- **与桌面端共享登录**：与桌面 DSH 共用同一份凭据（如 DeepSeek 账号登录、API Key），任一端登录、退出或修改 Key，另一端即时生效，无需在插件中重复登录。
 - **已有环境衔接**：首次使用时可导入已有桌面 DSH 的兼容模型配置和已完成的会话历史，保留原始数据。
 
 ## 支持环境
@@ -29,11 +34,11 @@ macOS、Linux、WSL 和远程工作区暂不在当前版本的支持范围内。
 
 ### 安装 VSIX
 
-先按下方[构建步骤](#从源码构建)生成 `.vsix` 文件，再安装到 VS Code。安装包不直接存放在源码仓库中。
+从 [GitHub Releases](https://github.com/2061623884/dsh-companion/releases/latest) 下载 Windows x64 的 `.vsix` 和 `SHA256SUMS`，核对 SHA-256 后安装。也可按下方[构建步骤](#从源码构建)自行生成安装包。
 
 1. 打开 VS Code 的扩展视图。
 2. 点击扩展视图右上角的 `…`，选择 **从 VSIX 安装…**（Install from VSIX）。
-3. 选择生成的 `dsh-companion-<版本号>-win32-x64.vsix`。
+3. 选择下载或构建得到的 `dsh-companion-<版本号>-win32-x64.vsix`。
 4. 安装完成后，按提示重新加载窗口；也可在命令面板执行 `Developer: Reload Window`。
 
 ### 开始对话
@@ -106,17 +111,22 @@ npm run package
 | `npm run build:runtime` | 复制运行时入口并应用适配；需先准备运行时依赖 |
 | `npm run check` | 严格检查 TypeScript，以及运行时和构建脚本的 JavaScript |
 | `npm test` / `npm run test:unit` | 构建并运行轻量单元测试 |
-| `npm run test:integration` | 验证真实运行时、多窗口、迁移和授权隔离 |
+| `npm run test:integration` | 验证真实运行时、多窗口、迁移和共享登录 |
 | `npm run test:native` | 自动准备合成环境并执行真实 VS Code/Webview 验收 |
 | `npm run package` | 检查运行时完整性、版本、许可证和必要契约，再生成 Windows x64 VSIX |
 | `npm run check:release` | 检查最终 VSIX 的文件清单、内容、版本与隐私，生成 SHA-256；需先准备安全检查工具 |
 | `npm run test:release` | 将检查过的 VSIX 安装到隔离环境，在最低版本与固定版本 VS Code 验收 |
+| `npm run prepare:release` | 使用同一份已验收 VSIX，在本地生成发布清单、说明和校验文件 |
+| `npm run check:candidate -- <目录> <提交SHA> <包SHA256>` | 校验候选文件、预期来源与校验信息 |
+| `npm run preview:release -- <目录> <提交SHA> <包SHA256>` | 预演发布计划；始终不上传、不创建标签或 Release |
 
 常规自动化测试使用合成用例和本地拦截，不调用付费模型。
 
 ## 数据与兼容性
 
 DSH Companion 使用 VS Code 提供的独立数据目录。已有桌面 DSH 的数据来源根据当前用户环境发现，不依赖固定用户名或安装路径。
+
+凭据例外：插件直接读写桌面数据目录中的 `.credentials.yaml`，与桌面端共用登录状态和 API Key，不在插件目录保存副本。两端账号模块解析出的 `platformOrigin` 必须一致；不一致时，插件保留登录并显示 `DSH_ACCOUNT_PLATFORM_MISMATCH`，统一两端账号平台配置后重新连接即可。插件不会根据凭据自动切换平台。自行保存凭据的第三方插件不属于这项通用共享机制。
 
 首次导入用于衔接已有配置与历史，不会持续双向同步两端的配置和会话。未完成或包含待处理输入的历史会话会跳过；桌面端的会话置顶、排序、归档以及全部第三方插件状态不属于完整迁移范围。
 
@@ -126,6 +136,7 @@ DSH Companion 使用 VS Code 提供的独立数据目录。已有桌面 DSH 的�
 
 GitHub 日常自动检查见[CI 说明](docs/ci.md)，不构建或上传安装包。独立的[发布准备流程](docs/release.md)仅手动运行，在临时环境构建并验证 VSIX，不上传安装包、不创建标签或 Release。
 
+- [项目状态](docs/status.md)：当前进度、验收结果与剩余问题。
 - [功能规范](docs/spec.md)：功能范围、数据迁移与运行行为。
 - [架构设计](docs/architecture.md)：运行时、编辑器上下文、引用和侧栏的职责划分。
 - [隐私与发布规则](docs/privacy.md)：用户环境发现、敏感数据排除和发布前检查。

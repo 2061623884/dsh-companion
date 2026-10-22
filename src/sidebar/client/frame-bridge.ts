@@ -31,6 +31,11 @@ window.addEventListener('message', event => {
   if(!data) return;
   if(event.source === frame.contentWindow && event.origin === base && data.source === 'dsh-companion-sidebar') {
     if(data.type === 'hello') { theme(); vscode.postMessage({ type: 'ready' }); }
+    else if(data.type === 'ui-ready') {
+      const loading = document.getElementById('dsh-companion-loading')!;
+      loading.setAttribute('data-ready', ''); loading.setAttribute('aria-hidden', 'true');
+      frame.inert = false; frame.setAttribute('aria-busy', 'false');
+    }
     else if(data.type === 'read-reference') vscode.postMessage({ type: 'read-reference', requestId: data.requestId, uri: data.uri });
     else if(data.type === 'trace') vscode.postMessage({ type: 'trace', stage: data.stage, durationMs: data.durationMs, bytes: data.bytes });
     return;

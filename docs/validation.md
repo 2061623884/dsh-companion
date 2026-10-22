@@ -1,4 +1,20 @@
-# Validation: 0.3.6
+# Validation: 0.3.7
+
+## Shared login closeout (2026-10-22)
+
+The unmodified pinned account initializer reproduced deletion of a synthetic shared grant when its issuer differed from the effective platform. The prepared initializer now raises `DSH_ACCOUNT_PLATFORM_MISMATCH`; the host reports enabled account activation failures before readiness. The real-runtime regression checks the entire credential file stays byte-identical on failure, then changes only the profile platform setting and successfully restarts with the same grant. Existing live desktop sign-out observation and no-credential-copy assertions remain.
+
+The original parallel integration command timed out at 30 seconds in the two-start welcome-persistence test; an isolated run took about 15 seconds, with approximately 10 seconds spent in the two intentional shutdown graces. A warmed parallel rerun also passed, so the symptom is intermittent startup contention, not evidence of a persistent deadlock. Integration files now run sequentially, preserving per-test deadlines and concurrent-client behavior within tests. The final normal integration command passed all 15 cases; the restart case took about 15.2 seconds. This does not establish a universal disk-cold startup bound.
+
+Strict source checks, all 35 unit cases, source inventory, archive-scanner canary coverage and native VS Code 1.124.2 editor/Webview plus bilingual send/failure-restoration acceptance passed. The public account API path containing a users segment exposed a privacy-check false positive; the corrected root-path boundary retains Windows, Unix, quoted and file-URI home-path rejection. No real account or generation call is part of these tests.
+
+Package acceptance additionally requires shared sign-in and extension-side sign-out through the actual installed sidebar RPC, including preservation of the browser grant and absence of a Companion credential copy. The synthetic sign-out request is intercepted with a successful fixture response; only explicit catalog/account reads and this sign-out are allowed. Fresh package hashes, archive scan results and both installed-editor results are recorded under ignored `.test-work/release`; these files establish the package result, not earlier 0.3.6 reports. Normal contributor extensions/profiles are not installed into or reloaded. No push, tag or publication is included.
+
+## Local candidate materials: validation scope (2026-10-22)
+
+Baseline: b2a684e8140b2eab5eab37111dba3bc1871e17ee to the working tree, including new files. Synthetic candidate tests cover unchanged-byte reuse, exact inventory, checksum/metadata/source conflicts, changed source/report evidence, duplicate or incomplete editor acceptance, versioned notes, bounded serialization, candidate directory links, failed/untrusted GitHub runs/jobs, remote tag/Release conflicts and GET-only rehearsal. The security-tool test additionally scans generated release-document canaries and checks fresh scan-directory cleanup on success and rejection. Strict checks, 35 unit cases, workflow actionlint and the scanner test passed during implementation.
+
+The real local validation chain is package -> full archive scan -> two-editor installed acceptance -> material generation -> candidate check -> offline rehearsal, with the build-source receipt, candidate files and validation JSON retained only under ignored .test-work/release. The source fingerprint binds all source/document changes, so it is frozen before this final chain; its actual output hashes/results are reported with delivery rather than edited back into this fingerprinted source tree. An uncommitted local candidate remains explicitly dirty/local and does not claim a new successful GitHub workflow run. Optional online provenance uses synthetic read-only responses in this round; hosted workflow execution and any artifact retention/upload remain unverified and unauthorized. No project commit, push, tag, Release or normal editor/desktop profile is part of this validation.
 
 ## Hosted release preparation follow-up (2026-10-22)
 

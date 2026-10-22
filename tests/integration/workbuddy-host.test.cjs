@@ -23,7 +23,7 @@ test('actual bundled host discovers desktop WorkBuddy auth and protects it throu
     if (previousNetwork === undefined) delete process.env.DSH_WORKBUDDY_TEST_NETWORK; else process.env.DSH_WORKBUDDY_TEST_NETWORK = previousNetwork;
   });
   const client = new RuntimeClient(path.resolve('runtime'), home, source);
-  const connection = new RuntimeConnection({ runtimeDirectory: path.resolve('runtime'), dataHome: home,
+  const connection = new RuntimeConnection({ runtimeDirectory: path.resolve('runtime'), dataHome: home, desktopHome: source,
     assetsDirectory: path.resolve('dist'), acquire: () => client.acquire() });
   t.after(async () => { await connection.dispose(); client.dispose(); });
   const base = await connection.start(), address = await client.acquire();

@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { mkdir, writeFile } from 'node:fs/promises';
 
 const requiredJobs = ['Privacy and workflows', 'Quick checks', 'Windows runtime', 'Native VS Code'];
 
@@ -35,5 +36,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   if (process.env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(sha)) throw new Error('RELEASE_REQUIRES_MAIN_AND_FULL_SHA');
   execFileSync('git', ['merge-base', '--is-ancestor', sha, 'origin/main'], { stdio: 'pipe' });
   const run = await checkReleaseCI(sha, process.env.GITHUB_REPOSITORY || '', process.env.GH_TOKEN || '');
+  await mkdir('.test-work/release', { recursive: true });
+  await writeFile('.test-work/release/ci-check.json', JSON.stringify({ commit: sha, repository: process.env.GITHUB_REPOSITORY, runId: run }) + '\n');
   console.log('Release candidate CI verified: run=' + run);
 }

@@ -23,6 +23,13 @@ test('runtime preflight rejects missing, stale and mismatched artifacts without 
     'accessTokenExpires: "访问令牌 {time} 过期（自动续期）",';
   const prepared = adaptWorkBuddyStatusClient(original); assert.equal(adaptWorkBuddyStatusClient(prepared), prepared);
   await write('runtime/node_modules/dsh-workbuddy-connect/lib/client.js', prepared);
+  const account = 'runtime/node_modules/@deepseek-ai/dsh-base/node_modules/@deepseek-ai/dsh-deepseek-account-platform/';
+  const accountSource = '\t\tif (parsed.data.issuer === this.origin) return;\n\t\tawait this.ctx.credentials.deleteRecord(KEY);';
+  await write(account + 'package.json', JSON.stringify({ version: '0.2.1-rc.2', main: 'lib/index.js' }));
+  await write(account + 'lib/index.js', accountSource);
+  const { prepareSharedLogin } = await import('../../scripts/prepare-shared-login.mjs');
+  await assert.rejects(prepareSharedLogin(path.join(root, 'runtime'), true), /not prepared/);
+  await prepareSharedLogin(path.join(root, 'runtime'));
   for (const name of ['host.mjs', 'import.mjs', 'workbuddy-auth.mjs']) { await write('src/runtime/' + name); await write('runtime/' + name); }
   await write('runtime/licenses.json', '[{"license":"MIT"}]');
   await write('runtime/node-version.json', '{"version":"24.21.0"}');
@@ -39,6 +46,12 @@ test('runtime preflight rejects missing, stale and mismatched artifacts without 
   }
   await write('runtime/startup-bundle-manifest.json', JSON.stringify({ packages }));
   assert.equal((await checkRuntimeFiles(root)).version, 'fixture-version');
+  const protectedAccount = await fs.readFile(path.join(root, account, 'lib/index.js'), 'utf8');
+  await write(account + 'lib/index.js', accountSource);
+  await assert.rejects(checkRuntimeFiles(root), /Shared login protection is not prepared/);
+  await write(account + 'lib/index.js', 'changed upstream');
+  await assert.rejects(prepareSharedLogin(path.join(root, 'runtime')), /initialization changed/);
+  await write(account + 'lib/index.js', protectedAccount);
   await fs.unlink(path.join(root, 'runtime/bin/node.exe'));
   await assert.rejects(checkRuntimeFiles(root), { code: 'ENOENT' }); await write('runtime/bin/node.exe');
   await write('runtime/host.mjs', 'stale'); await assert.rejects(checkRuntimeFiles(root), /Stale runtime entry/); await write('runtime/host.mjs');
