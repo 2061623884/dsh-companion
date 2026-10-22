@@ -29,6 +29,8 @@ exports.run = async () => {
           panel.webview.html = html.replace('</script>', `
             const loader=document.getElementById('dsh-companion-loading'), iframe=document.querySelector('iframe');
             const stream=loader.querySelector('.digit-stream');
+            const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const initialAnimation=getComputedStyle(stream).animationName;
             let handshakeVisible=false, readyAt, firstTransform, animationMoved=false;
             window.addEventListener('message', event=>{
               if(event.source!==iframe.contentWindow)return;
@@ -40,7 +42,7 @@ exports.run = async () => {
               if(firstTransform===undefined)firstTransform=transform;
               else if(!loader.hasAttribute('data-ready')&&transform!==firstTransform)animationMoved=true;
               if(readyAt!==undefined&&getComputedStyle(loader).visibility==='hidden'){
-                window.__loadingTestApi.postMessage({type:'loading-test',handshakeVisible,animationMoved,
+                window.__loadingTestApi.postMessage({type:'loading-test',handshakeVisible,animationMoved,reducedMotion,initialAnimation,
                   chatInteractive:!iframe.inert,fadeMs:performance.now()-readyAt,
                   animationStopped:getComputedStyle(stream).animationName==='none'});
               }else requestAnimationFrame(sample);
@@ -49,7 +51,8 @@ exports.run = async () => {
         });
         assert.equal(result.handshakeVisible, true); assert.equal(result.chatInteractive, true);
         assert.equal(result.animationStopped, true); assert.ok(result.fadeMs < 500);
-        if(delay) assert.equal(result.animationMoved, true);
+        if(result.reducedMotion) assert.equal(result.initialAnimation, 'none');
+        else if(delay) assert.equal(result.animationMoved, true);
         cases.push({ delay, ...result });
       } finally { panel.dispose(); }
     }
