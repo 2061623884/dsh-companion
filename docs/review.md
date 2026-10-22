@@ -1,5 +1,9 @@
 # Review: 0.3.6
 
+## Hosted installed-package diagnostics
+
+Standards and Spec separately reviewed the bounded diagnostic changes against 9d4bc3e6fab0b920fdcee154c17ec46a020d9388 and found no actionable issues. Only numeric phase/frame/prompt fields are exposed on failure, with explicit output bounds; raw logs remain ignored/local. Assertions, timeouts, two-version installation coverage and no-upload permissions are unchanged. Both editors passed the local rerun; that does not establish the cause or resolution of the hosted failure.
+
 ## Hosted public compiler-path collision
 
 Reviewed the correction against 71cc2e14164ea5e8b4621e474d6ff05a77513fca. Standards review found no actionable issues. Spec review found the path-policy sentence had not documented the exact public-prebuild exception; the specification was synchronized with the existing privacy/release documentation. File path and content hash both remain required, workspace paths always fail, and scanner rules are unchanged. Synthetic regressions and the original archive reproduction passed; hosted validation remains separately required.

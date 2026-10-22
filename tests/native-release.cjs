@@ -15,7 +15,7 @@ exports.run = async () => {
   await fs.writeFile(networkFile, '[]');
   const pending = new Map(); let serial = 0, ws, lease, pid, session;
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-  const result = { vscodeVersion: vscode.version, installedPackage: true };
+  const result = { vscodeVersion: vscode.version, installedPackage: true, phase: 0 };
   const probe = { prompts: 0, hasSelection: false }, originalRequest = http.request;
   const interceptor = http.createServer(async (request, response) => {
     const chunks = []; for await (const chunk of request) chunks.push(chunk); const body = Buffer.concat(chunks).toString('utf8');
@@ -54,6 +54,7 @@ exports.run = async () => {
     const editor = await vscode.window.showTextDocument(document);
     await editor.edit(edit => edit.insert(new vscode.Position(0, 0), '# UNSAVED_RELEASE_CONTEXT\n'));
     editor.selection = new vscode.Selection(0, 2, 0, 25);
+    result.phase = 1;
     await extension.activate(); await vscode.commands.executeCommand('dshCompanion.open');
     const debug = await (await fetch('http://127.0.0.1:' + process.env.DSH_RELEASE_DEBUG_PORT + '/json/version')).json();
     ws = new WebSocket(debug.webSocketDebuggerUrl); await new Promise((resolve, reject) => { ws.onopen = resolve; ws.onerror = reject; });
@@ -62,32 +63,44 @@ exports.run = async () => {
       pending.delete(message.id); clearTimeout(request.timer);
       if (message.error) request.reject(new Error('Release debugger protocol failure: ' + message.error.code)); else request.resolve(message.result);
     };
-    const target = await until(async () => (await send('Target.getTargets')).targetInfos.find(value =>
-      value.type === 'iframe' && /^http:\/\/127\.0\.0\.1:\d+\/.*[?&]dsh-companion=1(?:[&#]|$)/.test(value.url)), 'actual-sidebar-frame', 90000);
+    result.phase = 2;
+    const target = await until(async () => {
+      const targets = (await send('Target.getTargets')).targetInfos;
+      result.iframeTargets = targets.filter(value => value.type === 'iframe').length;
+      return targets.find(value => value.type === 'iframe' && /^http:\/\/127\.0\.0\.1:\d+\/.*[?&]dsh-companion=1(?:[&#]|$)/.test(value.url));
+    }, 'actual-sidebar-frame', 90000);
     session = (await send('Target.attachToTarget', { targetId: target.targetId, flatten: true })).sessionId;
     await send('Runtime.enable', {}, session);
+    result.phase = 3;
     await until(async () => evaluate(`!!document.querySelector('#dsh-companion-toolbar')`), 'toolbar');
     // Confirm the normal first-use acknowledgement can be saved in the installed runtime.
     await evaluate(`(() => { const button=[...document.querySelectorAll('button')].find(b=>/^(继续|Continue)$/.test(b.textContent.trim()));if(button)button.click();return true; })()`);
+    result.phase = 4;
     await until(async () => evaluate(`!!document.querySelector('[data-composer-chip="vscode-editor"]') && document.querySelector('#dsh-companion-toolbar button[aria-label="新建会话"]')?.disabled === false`), 'automatic-workspace-and-reference');
     // Observe a runtime already owned by the installed extension. Never start a substitute.
     const actualHome = path.join(path.dirname(process.env.DSH_RELEASE_RESULT), 'profile/User/globalStorage', id, 'dsh');
     const identity = createHash('sha256').update(path.resolve(actualHome).toLowerCase()).digest('hex').slice(0, 32);
+    result.phase = 5;
     lease = net.connect('\\\\.\\pipe\\dsh-companion-' + identity);
     pid = await new Promise((resolve, reject) => {
       let buffer = ''; lease.once('error', reject); lease.on('connect', () => lease.write(JSON.stringify({ type: 'attach', version: extension.packageJSON.version }) + '\n'));
       lease.on('data', data => { buffer += data; for (const line of buffer.split('\n').slice(0, -1)) { const message = JSON.parse(line); if (message.type === 'ready') resolve(message.pid); else if (message.type === 'error') reject(new Error('Release runtime attach failed')); } buffer = buffer.slice(buffer.lastIndexOf('\n') + 1); });
     });
     // Submit through the real installed composer; the loopback fixture rejects before backend admission.
+    result.phase = 6;
     await evaluate(`(() => {
       const input=document.querySelector('[data-composer-input][contenteditable="true"]');input.focus();
       const range=document.createRange();range.selectNodeContents(input);range.collapse(false);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);
       document.execCommand('insertText',false,'RELEASE_SEND_SENTINEL');return true;
     })()`);
+    result.phase = 7;
     await until(async () => evaluate(`(() => {const button=document.querySelector('button[aria-label="发送消息"],button[aria-label="Send message"]');return !!button&&!button.disabled;})()`), 'send-enabled');
+    result.phase = 8;
     await evaluate(`document.querySelector('button[aria-label="发送消息"],button[aria-label="Send message"]').click(); true`);
     await until(async () => evaluate(`!document.querySelector('[data-composer-input]')?.innerText.includes('RELEASE_SEND_SENTINEL')`), 'immediate-send-feedback', 800);
+    result.phase = 9;
     await until(async () => probe.prompts === 1 && evaluate(`!!document.querySelector('[data-composer-input]')?.innerText.includes('RELEASE_SEND_SENTINEL')`), 'failed-draft-restored');
+    result.phase = 10;
     assert.equal(probe.hasSelection, true); assert.equal(probe.prompts, 1);
     result.interceptedPrompts = probe.prompts; result.unsavedReference = true; result.draftRestored = true;
     const requests = JSON.parse(await fs.readFile(networkFile, 'utf8'));
@@ -96,6 +109,7 @@ exports.run = async () => {
     assert.equal(result.generationCalls, 0, 'only model catalog and billing reads may reach the runtime network fixture');
     assert.equal(requests.filter(request => /refresh/.test(request.path) || request.refreshHeader).length, 0);
   } finally {
+    result.interceptedPrompts = probe.prompts;
     http.request = originalRequest; interceptor.closeAllConnections(); await new Promise(resolve => interceptor.close(resolve));
     ws?.close(); lease?.destroy();
     for (const request of pending.values()) { clearTimeout(request.timer); request.reject(new Error('Release debugger closed')); }

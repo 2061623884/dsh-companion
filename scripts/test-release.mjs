@@ -51,6 +51,16 @@ for (const version of new Set([minimum, vscodeVersion])) {
   } catch (error) {
     const failure = /** @type {{stdout?: string, stderr?: string}} */ (error);
     await writeFile(path.join(output, 'native-' + version + '.log'), (failure.stdout || '') + (failure.stderr || ''));
+    try {
+      const probe = JSON.parse(await readFile(resultFile, 'utf8'));
+      const phase = Number.isInteger(probe.phase) && probe.phase >= 0 && probe.phase <= 10 ? probe.phase : -1;
+      const frames = Number.isInteger(probe.iframeTargets) && probe.iframeTargets >= 0 && probe.iframeTargets <= 100 ? probe.iframeTargets : -1;
+      const prompts = Number.isInteger(probe.interceptedPrompts) && probe.interceptedPrompts >= 0 && probe.interceptedPrompts <= 10 ? probe.interceptedPrompts : -1;
+      console.error('Release installed probe: phase=' + phase + ', frames=' + frames + ', prompts=' + prompts);
+    } catch (probeError) {
+      if (/** @type {NodeJS.ErrnoException} */ (probeError).code !== 'ENOENT') throw probeError;
+      console.error('Release installed probe: result unavailable');
+    }
     throw new Error('RELEASE_INSTALLED_' + stage.toUpperCase() + '_FAILED_' + version);
   }
   const result = JSON.parse(await readFile(resultFile, 'utf8'));
