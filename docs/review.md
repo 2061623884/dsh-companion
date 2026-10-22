@@ -1,5 +1,9 @@
 # Review: 0.3.6
 
+## Installed first-use readiness
+
+Standards and Spec independently reviewed the minimal welcome/input readiness correction against 91f9af953dd1f1a3e6a66df336d45a6189268d17 and found no actionable issues. The test waits for actual acknowledgement and an interactive composer, then confirms text is present before testing send feedback. It retains the original HTTP interceptor, timeouts, assertions and two-editor coverage. The corrected actual VSIX passed local acceptance on both 1.106.0 and 1.124.2; strict checks and all 30 unit cases passed. Hosted verification remains a separate gate.
+
 ## Hosted installed-package diagnostics
 
 Standards and Spec separately reviewed the bounded diagnostic changes against 9d4bc3e6fab0b920fdcee154c17ec46a020d9388 and found no actionable issues. Only numeric phase/frame/prompt fields are exposed on failure, with explicit output bounds; raw logs remain ignored/local. Assertions, timeouts, two-version installation coverage and no-upload permissions are unchanged. Both editors passed the local rerun; that does not establish the cause or resolution of the hosted failure.

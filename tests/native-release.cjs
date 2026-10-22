@@ -74,7 +74,9 @@ exports.run = async () => {
     result.phase = 3;
     await until(async () => evaluate(`!!document.querySelector('#dsh-companion-toolbar')`), 'toolbar');
     // Confirm the normal first-use acknowledgement can be saved in the installed runtime.
-    await evaluate(`(() => { const button=[...document.querySelectorAll('button')].find(b=>/^(继续|Continue)$/.test(b.textContent.trim()));if(button)button.click();return true; })()`);
+    await until(async () => evaluate(`(() => { const button=[...document.querySelectorAll('button')].find(b=>/^(继续|Continue)$/.test(b.textContent.trim()));return !!button&&!button.disabled; })()`), 'welcome-ready');
+    await evaluate(`[...document.querySelectorAll('button')].find(b=>/^(继续|Continue)$/.test(b.textContent.trim())).click(); true`);
+    await until(async () => evaluate(`!!document.getElementById('root') && !document.getElementById('root').inert && ![...document.querySelectorAll('button')].some(b=>/^(继续|Continue)$/.test(b.textContent.trim()))`), 'welcome-dismissed');
     result.phase = 4;
     await until(async () => evaluate(`!!document.querySelector('[data-composer-chip="vscode-editor"]') && document.querySelector('#dsh-companion-toolbar button[aria-label="新建会话"]')?.disabled === false`), 'automatic-workspace-and-reference');
     // Observe a runtime already owned by the installed extension. Never start a substitute.
@@ -93,6 +95,7 @@ exports.run = async () => {
       const range=document.createRange();range.selectNodeContents(input);range.collapse(false);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);
       document.execCommand('insertText',false,'RELEASE_SEND_SENTINEL');return true;
     })()`);
+    await until(async () => evaluate(`!!document.querySelector('[data-composer-input]')?.innerText.includes('RELEASE_SEND_SENTINEL')`), 'input-committed');
     result.phase = 7;
     await until(async () => evaluate(`(() => {const button=document.querySelector('button[aria-label="发送消息"],button[aria-label="Send message"]');return !!button&&!button.disabled;})()`), 'send-enabled');
     result.phase = 8;
