@@ -1,5 +1,11 @@
 # Review: 0.3.6
 
+## Verify-only release preparation
+
+Reviewed the working-tree changes and new files against 47957b57388ee7a75c3c2e80595ed3d38f059eee and docs/spec.md's release-preparation requirements. Separate Standards and Spec agents reviewed the change. Confirmed findings were fixed: archive validation now shares an explicit content-only personal-path predicate; native tests share the synthetic WorkBuddy profile fixture; outbound counters derive from observed requests with only the catalog/billing read endpoints permitted; and workspace binding is checked against the actual persisted synthetic session cwd after runtime shutdown. No production adapter or editor interface learned release/test details. Version metadata, CI admission, archive policy and installed-package acceptance retain separate responsibilities; no publication mode or speculative provider interface was added.
+
+Native execution found test CLI-layout/interception coverage issues, which were corrected without changing product code; both editor versions passed actual installed-package acceptance. Final Standards and Spec re-reviews of those corrections reported zero remaining actionable findings. Validation evidence and the explicit hosted-run limitation are in docs/validation.md. No commit, push, artifact upload, tag or Release is part of this delivery.
+
 ## Native hosted acceptance follow-up
 
 Reviewed the bounded phase diagnostics and bilingual test setup against ddf0203c7d4b524a265c2d59610eeeea3e6095b8, including diagnostic commit 45f3ed2 and the working-tree locale fix. Independent Standards and Spec reviews each found zero remaining actionable issues. The trace reuses fixed numeric stage/visibility fields and timeout reports only stage/visibility/counts. Locale settings are asserted through RPC in a new synthetic owned home; no production UI or contributor preferences change. The same real Webview, file sizes, intercepted responses, feedback threshold and failure-restoration assertions remain. The raw probe wire encodes visibility as 0/1 in the existing numeric bytes field and converts it to a boolean locally; the spec does not require a new production protocol field.

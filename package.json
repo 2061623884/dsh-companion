@@ -33,7 +33,9 @@
     "build": "node build.mjs",
     "check": "tsc --noEmit && tsc -p tsconfig.scripts.json",
     "test": "npm run test:unit",
-    "package": "npm run check && npm run build && npm run build:runtime && node scripts/check-runtime.mjs && vsce package --target win32-x64 --no-dependencies --allow-missing-repository --skip-license --out ../outputs/dsh-companion-0.3.6.vsix",
+    "package": "npm run check && npm run build && npm run build:runtime && node scripts/check-runtime.mjs && node scripts/package-release.mjs",
+    "check:release": "node scripts/check-release.mjs",
+    "test:release": "node scripts/test-release.mjs",
     "prepare-runtime": "npm ci --prefix runtime --omit=dev --no-audit --no-fund && node scripts/prepare-runtime.mjs",
     "build:runtime": "node scripts/build-runtime.mjs",
     "test:unit": "npm run build && node --test tests/unit/*.test.cjs",
@@ -115,9 +117,12 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.0.0",
     "@types/vscode": "1.106.0",
+    "@types/yauzl": "3.4.0",
     "@vscode/test-electron": "3.1.0",
     "@vscode/vsce": "^3.6.0",
     "esbuild": "^0.25.0",
-    "typescript": "^5.9.0"
+    "typescript": "^5.9.0",
+    "yauzl": "3.4.0",
+    "yazl": "2.5.1"
   }
 }

@@ -1,5 +1,16 @@
 # Independent bundled runtime (0.3.0)
 
+## Release preparation: verify only
+
+Review baseline: 47957b57388ee7a75c3c2e80595ed3d38f059eee to the working tree, including new files. Implement the approved second-stage verification path only. No commit, push, artifact upload, tag, Release, Marketplace publication or desktop data/configuration changes.
+
+- Ordinary CI remains unchanged. Add a main-only manual preparation workflow with contents/actions read permissions, no persistent checkout credentials and pinned Actions. Accept a full main commit SHA; require successful completed CI and all four named jobs for exactly that SHA, excluding PR/other-branch runs.
+- Derive the win32-x64 VSIX filename from the extension version. Require root/runtime manifest and lockfile versions to agree; preserve extension identity and current version. Prepare clean locked runtime dependencies before packaging.
+- Inspect the actual VSIX: safe and expected paths, CRC/size integrity, shipped manifest identity/version/platform, required built assets, runtime and licenses. Scan contents including vendored dependencies; require a synthetic canary to prove scanner coverage. Reviewed public upstream findings may be accepted only for the exact unchanged file hash and rule, with a documented non-personal origin. Exclude unnecessary upstream CI credential files and test examples.
+- Preserve repository privacy gates. Owned assets reject literal home paths; all bundled bytes reject this builder's actual home/workspace paths. Public pinned dependencies may retain upstream documentation/compiler paths. This exception does not allow developer configuration, account evidence, credentials or real test data. Diagnostics remain ignored/local; workflow logs expose only bounded summaries.
+- Install the exact scanned VSIX in isolated editor/extension/data directories, using only an empty development harness, never the source Companion extension. Exercise real sidebar startup, automatic workspace binding, unsaved script references, intercepted send feedback/failure restoration and owned-runtime shutdown. Verify both the declared minimum and pinned VS Code versions with synthetic desktop data and no external generation calls. Verify artifact SHA-256 remains unchanged.
+- Document reproducible local commands, ownership boundaries and actual validation limits. Review Standards and Spec independently; repair confirmed findings. Hosted workflow execution remains unverified until a separately authorized push/run.
+
 ## Hosted CI follow-up
 
 Review baseline: 03e3b89a1b9a80531f8497b020da95071887e4f8 to the working tree. Push the approved source-only CI changes and verify the actual hosted checks. Correct confirmed failures and rerun; no installation package build/upload/publication, personal configuration, credentials or real test data.

@@ -4,6 +4,11 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+/** @param {string} content */
+export function hasPersonalHomePath(content) {
+  return /[a-z]:[\\/]+Users[\\/]+[^\\/\s"'<>]+|\/(?:home|Users)\/+[^/\s"'<>]+/i.test(content);
+}
+
 /** Source/distribution privacy policy; return only a safe diagnostic code.
  * @param {string} filename @param {string} content
  */
@@ -13,7 +18,7 @@ export function sourceViolation(filename, content) {
     /^runtime\/(bin\/|(?:host|import|workbuddy-auth)\.mjs$|(?:startup-)?bundle-manifest\.json$)/.test(name)) return 'GENERATED_OR_PRIVATE_DATA';
   if (/(^|\/)(\.env(?:\..*)?|\.credentials\.ya?ml|\.workbuddy[^/]*-auth\.json|runtime-error\.json|migration\.json)$/.test(name) && !name.endsWith('/.env.example') && name !== '.env.example') return 'CREDENTIAL_OR_LOCAL_CONFIG';
   if (/\.(vsix|zip|7z|tgz|exe|dll|node|log|sqlite3?|db|jsonl(?:\.zstd)?)$/i.test(name)) return 'BINARY_OR_RAW_DATA';
-  if (/[a-z]:[\\/]Users[\\/][^\\/\s"'<>]+|\/(?:home|Users)\/[^/\s"'<>]+/i.test(content)) return 'PERSONAL_HOME_PATH';
+  if (hasPersonalHomePath(content)) return 'PERSONAL_HOME_PATH';
   return null;
 }
 

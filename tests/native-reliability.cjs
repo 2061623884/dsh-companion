@@ -1,19 +1,13 @@
 // Opt-in native VS Code acceptance. Only synthetic data and intercepted prompts.
 const vscode = require('vscode'), fs = require('node:fs/promises'), path = require('node:path');
-const { pathToFileURL } = require('node:url'), { createHash } = require('node:crypto'), assert = require('node:assert/strict');
+const { pathToFileURL } = require('node:url'), assert = require('node:assert/strict');
+const { prepareWorkBuddyProfile } = require('./workbuddy-profile-fixture.cjs');
 exports.run = async () => {
   const root = path.resolve(__dirname, '..'), work = path.join(root, '.test-work/native-reliability');
   const { RuntimeClient } = require('../dist/test/runtime/client'), { RuntimeConnection } = require('../dist/test/runtime/connection');
   const { EditorContext } = require('../dist/test/context/editor-context'), { frameHtml } = require('../dist/test/sidebar/view');
   const directory = await fs.mkdtemp(work + '-'), home = path.join(directory, 'home'), source = path.join(directory, 'desktop');
-  const authDir = path.join(source, 'profiles/desktop/.dsh-workbuddy-connect'); await fs.mkdir(authDir, { recursive: true });
-  const auth = path.join(authDir, '.workbuddy-auth.json');
-  await fs.writeFile(auth, JSON.stringify({ region: 'cn', auth: { accessToken: 'fixture-native-access', refreshToken: 'fixture-never-refresh',
-    expiresAt: Date.now() + 3600000, domain: 'copilot.tencent.com' } }));
-  await fs.writeFile(path.join(source, 'profiles/desktop/cordis.patch.yml'), JSON.stringify([
-    { id: 'agent-default-model', name: '@deepseek-ai/dsh-agent-default-model', config: { provider: 'workbuddy', model: 'fixture-workbuddy' } },
-  ]));
-  const hash = async () => createHash('sha256').update(await fs.readFile(auth)).digest('hex'), before = await hash();
+  const desktopFixture = await prepareWorkBuddyProfile(source);
   const requestsFile = path.join(directory, 'network.json'), previous = process.env.NODE_OPTIONS, previousNetwork = process.env.DSH_WORKBUDDY_TEST_NETWORK;
   process.env.NODE_OPTIONS = '--import=' + pathToFileURL(path.join(root, 'tests/workbuddy-network-fixture.mjs'));
   process.env.DSH_WORKBUDDY_TEST_NETWORK = requestsFile;
@@ -114,7 +108,7 @@ exports.run = async () => {
     await connection.dispose(); client.dispose();
     if (previous === undefined) delete process.env.NODE_OPTIONS; else process.env.NODE_OPTIONS = previous;
     if (previousNetwork === undefined) delete process.env.DSH_WORKBUDDY_TEST_NETWORK; else process.env.DSH_WORKBUDDY_TEST_NETWORK = previousNetwork;
-    result.syntheticDesktopCredentialUnchanged = before === await hash();
+    result.syntheticDesktopCredentialUnchanged = await desktopFixture.unchanged();
     if (address) for (let i = 0; i < 130; i++) {
       try { process.kill(address.pid, 0); }
       catch (error) { if (error.code === 'ESRCH') { result.ownedRuntimeExited = true; break; } throw error; }

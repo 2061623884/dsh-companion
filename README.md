@@ -33,7 +33,7 @@ macOS、Linux、WSL 和远程工作区暂不在当前版本的支持范围内。
 
 1. 打开 VS Code 的扩展视图。
 2. 点击扩展视图右上角的 `…`，选择 **从 VSIX 安装…**（Install from VSIX）。
-3. 选择生成的 `dsh-companion-<版本号>.vsix`。
+3. 选择生成的 `dsh-companion-<版本号>-win32-x64.vsix`。
 4. 安装完成后，按提示重新加载窗口；也可在命令面板执行 `Developer: Reload Window`。
 
 ### 开始对话
@@ -90,11 +90,10 @@ npm run test:integration
 # 已安装 Microsoft VS Code 时，可执行隔离的原生验收
 npm run test:native
 
-New-Item -ItemType Directory -Force -Path ..\outputs | Out-Null
 npm run package
 ```
 
-生成的安装包位于 `../outputs/dsh-companion-<版本号>.vsix`，版本号取自 `package.json`。按照上方安装步骤加载即可。
+生成的安装包位于 `.test-work/release/dsh-companion-<版本号>-win32-x64.vsix`，版本号取自 `package.json`。按照上方安装步骤加载即可。
 
 `prepare-runtime` 安装锁定的 DSH 依赖，下载并校验内置 Node.js，完成依赖准备；修改运行时源码后，`build:runtime` 单独复制入口并应用受控适配。集成测试和打包会执行该构建步骤，日常单测不会执行。
 
@@ -110,6 +109,8 @@ npm run package
 | `npm run test:integration` | 验证真实运行时、多窗口、迁移和授权隔离 |
 | `npm run test:native` | 自动准备合成环境并执行真实 VS Code/Webview 验收 |
 | `npm run package` | 检查运行时完整性、版本、许可证和必要契约，再生成 Windows x64 VSIX |
+| `npm run check:release` | 检查最终 VSIX 的文件清单、内容、版本与隐私，生成 SHA-256；需先准备安全检查工具 |
+| `npm run test:release` | 将检查过的 VSIX 安装到隔离环境，在最低版本与固定版本 VS Code 验收 |
 
 常规自动化测试使用合成用例和本地拦截，不调用付费模型。
 
@@ -123,7 +124,7 @@ DSH Companion 使用 VS Code 提供的独立数据目录。已有桌面 DSH 的�
 
 ## 文档与贡献
 
-GitHub 自动检查的触发条件、检查范围及本地复现步骤见[CI 说明](docs/ci.md)。检查流程不构建或上传安装包，不执行发布。
+GitHub 日常自动检查见[CI 说明](docs/ci.md)，不构建或上传安装包。独立的[发布准备流程](docs/release.md)仅手动运行，在临时环境构建并验证 VSIX，不上传安装包、不创建标签或 Release。
 
 - [功能规范](docs/spec.md)：功能范围、数据迁移与运行行为。
 - [架构设计](docs/architecture.md)：运行时、编辑器上下文、引用和侧栏的职责划分。

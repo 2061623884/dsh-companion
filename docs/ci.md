@@ -2,6 +2,8 @@
 
 The checking workflow is .github/workflows/ci.yml. It runs on GitHub-hosted windows-2022 with Node read from runtime/node-version.json. No installation package is built/uploaded, and no Release or Marketplace publication is part of this workflow.
 
+The separate main-only manual release preparation workflow is documented in [release.md](release.md). It builds and tests a candidate only after the exact commit's four CI jobs pass. It has no artifact upload, tag or publication step; ordinary CI behavior is unchanged.
+
 | Check name | Events | Work |
 | --- | --- | --- |
 | Privacy and workflows | PR, main push, manual | Source inventory/home-path check, actionlint, fully redacted Gitleaks history scan |

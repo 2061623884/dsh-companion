@@ -33,3 +33,7 @@ runtime-error.json
 migration.json
 outputs/**
 work/**
+
+# Upstream CI credentials and unit-test examples are not runtime assets.
+runtime/node_modules/**/.coveralls.yml
+runtime/node_modules/**/tests/**/*.test.ts

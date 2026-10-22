@@ -1,0 +1,74 @@
+name: Release preparation (verify only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Full main commit SHA with all four CI jobs successful
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+defaults:
+  run:
+    shell: pwsh
+
+env:
+  CI: 'true'
+  GIT_CONFIG_COUNT: '1'
+  GIT_CONFIG_KEY_0: url.https://github.com/.insteadOf
+  GIT_CONFIG_VALUE_0: ssh://git@github.com/
+
+jobs:
+  verify:
+    name: Verify installed release candidate
+    if: github.ref == 'refs/heads/main'
+    runs-on: windows-2022
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require exact green main CI
+        env:
+          RELEASE_SHA: ${{ inputs.commit }}
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/check-release-ref.mjs
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.commit }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Read pinned Node version
+        id: node
+        run: '"version=$((Get-Content runtime/node-version.json -Raw | ConvertFrom-Json).version)" >> $env:GITHUB_OUTPUT'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: ${{ steps.node.outputs.version }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            runtime/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run check:source
+      - name: Prepare verified check tools
+        run: ./scripts/prepare-ci-tools.ps1
+      - name: Check workflows and history
+        run: |
+          & ./.test-work/ci-tools/actionlint/actionlint.exe -oneline
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./.test-work/ci-tools/gitleaks/gitleaks.exe git --log-opts=--all --redact=100 --no-banner --exit-code=1
+      - name: Verify archive scanner with synthetic canary
+        run: |
+          New-Item -ItemType Directory -Force -Path .test-work/release | Out-Null
+          node --test tests/release-privacy.cjs
+      - run: npm run prepare-runtime
+      - run: npm run package
+      - run: npm run check:release
+      - run: npm run test:release
+      # Deliberately no upload, tag, Release, Marketplace or write permission.

@@ -13,6 +13,7 @@ test('source privacy rejects private/generated data and literal home paths while
   assert.equal(sourceViolation('src/config.ts', ['C:', 'Users', 'synthetic-person', 'file.txt'].join('\\')), 'PERSONAL_HOME_PATH');
   assert.equal(sourceViolation('docs/notes.md', ['', 'home', 'synthetic-person', 'data'].join('/')), 'PERSONAL_HOME_PATH');
   for (const separator of ['\\', '/']) assert.equal(sourceViolation('README.md', ['C:', 'Users', 'synthetic-person'].join(separator)), 'PERSONAL_HOME_PATH');
+  assert.equal(sourceViolation('fixture.json', JSON.stringify(['C:', 'Users', 'synthetic-person'].join('\\'))), 'PERSONAL_HOME_PATH');
   for (const directory of ['home', 'Users']) assert.equal(sourceViolation('README.md', ['', directory, 'synthetic-person'].join('/')), 'PERSONAL_HOME_PATH');
   assert.equal(sourceViolation('README.md', 'https://github.com/example/project and process.env.DSH_HOME'), null);
 });
