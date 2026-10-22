@@ -47,6 +47,9 @@ test('release versions and final ZIP enforce metadata, required runtime, privacy
   const { releaseMetadata } = await import('../../scripts/release-metadata.mjs');
   const { checkReleaseArchive, releaseEntryViolation } = await import('../../scripts/check-release.mjs');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-release-fixture-')); t.after(() => fs.rm(root, { recursive: true, force: true }));
+  await fs.mkdir(path.join(root, 'scripts'));
+  const approvals = path.join(root, 'scripts/release-public-findings.json');
+  await fs.writeFile(approvals, '[]');
   const manifest = { name: 'dsh-companion', publisher: 'synthetic', version: '0.0.1' }, runtime = { version: '0.0.1' };
   const files = new Map([
     ['package.json', JSON.stringify(manifest)], ['runtime/package.json', JSON.stringify(runtime)],
@@ -82,6 +85,16 @@ test('release versions and final ZIP enforce metadata, required runtime, privacy
   }
   await assert.rejects(inspect({ extra: ['extension/README.md', ['C:', 'Users', 'synthetic-person'].join('\\')] }), /RELEASE_PERSONAL_HOME_PATH/);
   await assert.rejects(inspect({ extra: ['extension/runtime/node_modules/vendor/file.js', os.homedir()] }), /RELEASE_PERSONAL_HOME_PATH/);
+  const publicFile = 'extension/runtime/node_modules/vendor/prebuilt.node';
+  const publicBytes = 'synthetic upstream compiler path: ' + os.homedir();
+  const approveHome = async content => fs.writeFile(approvals, JSON.stringify([{ file: publicFile,
+    sha256: require('node:crypto').createHash('sha256').update(content).digest('hex'), publicCompilerHome: true, rules: [] }]));
+  await approveHome(publicBytes);
+  assert.equal((await inspect({ extra: [publicFile, publicBytes] })).files, files.size + 3);
+  await assert.rejects(inspect({ extra: [publicFile, publicBytes + ' changed'] }), /RELEASE_PERSONAL_HOME_PATH/);
+  await assert.rejects(inspect({ extra: [publicFile.replace('prebuilt.node', 'other.node'), publicBytes] }), /RELEASE_PERSONAL_HOME_PATH/);
+  await approveHome(root);
+  await assert.rejects(inspect({ extra: [publicFile, root] }), /RELEASE_PERSONAL_HOME_PATH/);
   for (const entry of ['/absolute', '../outside', 'extension/../outside', 'extension\\file', 'extension/file:stream']) assert.equal(releaseEntryViolation(entry), 'RELEASE_UNSAFE_PATH');
   const target = await archive(), corrupted = await fs.readFile(target), central = corrupted.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]));
   corrupted.writeUInt32LE((corrupted.readUInt32LE(central + 16) ^ 1) >>> 0, central + 16); await fs.writeFile(target, corrupted);

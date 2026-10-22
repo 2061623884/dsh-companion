@@ -1,5 +1,9 @@
 # Review: 0.3.6
 
+## Hosted public compiler-path collision
+
+Reviewed the correction against 71cc2e14164ea5e8b4621e474d6ff05a77513fca. Standards review found no actionable issues. Spec review found the path-policy sentence had not documented the exact public-prebuild exception; the specification was synchronized with the existing privacy/release documentation. File path and content hash both remain required, workspace paths always fail, and scanner rules are unchanged. Synthetic regressions and the original archive reproduction passed; hosted validation remains separately required.
+
 ## Verify-only release preparation
 
 Reviewed the working-tree changes and new files against 47957b57388ee7a75c3c2e80595ed3d38f059eee and docs/spec.md's release-preparation requirements. Separate Standards and Spec agents reviewed the change. Confirmed findings were fixed: archive validation now shares an explicit content-only personal-path predicate; native tests share the synthetic WorkBuddy profile fixture; outbound counters derive from observed requests with only the catalog/billing read endpoints permitted; and workspace binding is checked against the actual persisted synthetic session cwd after runtime shutdown. No production adapter or editor interface learned release/test details. Version metadata, CI admission, archive policy and installed-package acceptance retain separate responsibilities; no publication mode or speculative provider interface was added.

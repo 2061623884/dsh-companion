@@ -1,5 +1,19 @@
 [
   {
+    "file": "extension/runtime/node_modules/pnpm/dist/reflink.win32-x64-msvc-J2TZHRQI.node",
+    "sha256": "370cdee825881d1f0c3e87a85df5589ee51f1a7eec3bca3c252255b6521224dc",
+    "rules": [],
+    "publicCompilerHome": true,
+    "reason": "Public pnpm 10.28.0 prebuild compiler path can coincide with a hosted runner home; verified against the lockfile-integrity-checked npm tarball"
+  },
+  {
+    "file": "extension/runtime/node_modules/pnpm/dist/reflink.win32-arm64-msvc-Q6BARPPB.node",
+    "sha256": "b7c3fe5620ead8872593acd949fac7bb4d860ec015e320f7e117260fa3b12d96",
+    "rules": [],
+    "publicCompilerHome": true,
+    "reason": "Public pnpm 10.28.0 prebuild compiler path can coincide with a hosted runner home; verified against the lockfile-integrity-checked npm tarball"
+  },
+  {
     "file": "extension/runtime/node_modules/@anthropic-ai/sdk/resources/beta/organization/organization.js",
     "sha256": "fcec706d2537facb93c9cdf8534e9c25b4445c6b2f5035367fb6e7060431cfb8",
     "rules": [

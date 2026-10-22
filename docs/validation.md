@@ -1,5 +1,11 @@
 # Validation: 0.3.6
 
+## Hosted release preparation follow-up (2026-10-22)
+
+Commit 71cc2e1 passed all four jobs in [CI run 39717963982](https://github.com/2061623884/dsh-companion/actions/runs/39717963982). The subsequently dispatched [verify-only run 39719235068](https://github.com/2061623884/dsh-companion/actions/runs/39719235068) passed exact-commit admission, source/history checks, the scanner canary and packaging, then rejected a builder-home match before installed-package acceptance.
+
+The same failure was reproduced locally by substituting the hosted runner home in the archive checker. Two public pnpm 10.28.0 prebuilt binaries contain an upstream compiler home identical to that runner home. Both file hashes were independently verified against a freshly downloaded public npm tarball with lockfile SHA-512 integrity. The correction permits only those exact archive paths and byte hashes for the home-name collision; current workspace paths and secret scanning remain enforced. Synthetic regression checks accept the reviewed bytes and reject changed bytes, a different filename and a current workspace path even with an approved hash. The original local archive repro, strict checks, all 30 unit cases and the scanner canary passed after the correction. Hosted success for the correction must be established by a new CI run followed by a verify-only run; the failed run is not treated as a pass.
+
 ## Verify-only release preparation (2026-10-21)
 
 Baseline: 47957b57388ee7a75c3c2e80595ed3d38f059eee to the uncommitted working tree. The ordinary CI workflow and product source behavior are unchanged. The new main-only manual workflow has contents/actions read permissions, requires the exact commit's four successful CI jobs and contains no upload, tag or publication path. GitHub API cases are synthetic tests; hosted execution remains unverified because this round does not push or dispatch.

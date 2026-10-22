@@ -31,6 +31,7 @@ export function releaseEntryViolation(name) {
  */
 export async function checkReleaseArchive(root, archive, directory) {
   const metadata = await releaseMetadata(root), seen = new Set(), contents = new Map();
+  const approved = JSON.parse(await readFile(path.join(root, 'scripts/release-public-findings.json'), 'utf8'));
   const required = ['package.json', 'dist/extension.js', 'dist/sidebar.js', 'dist/bootstrap.js', 'dist/sidebar.css', 'media/whale.svg',
     'runtime/bin/node.exe', 'runtime/bin/NODE-LICENSE', 'runtime/licenses.json', 'runtime/node-version.json', 'runtime/package.json',
     'runtime/host.mjs', 'runtime/import.mjs', 'runtime/workbuddy-auth.mjs', 'runtime/bundle-manifest.json', 'runtime/startup-bundle-manifest.json'];
@@ -49,10 +50,14 @@ export async function checkReleaseArchive(root, archive, directory) {
       if (bytes.length !== entry.uncompressedSize || crc32(bytes) !== entry.crc32) throw new Error('RELEASE_ARCHIVE_CORRUPT');
       const text = bytes.toString('utf8');
       // Public dependencies contain upstream documentation examples and compiler paths.
-      // Their bytes must still contain neither this builder's home nor workspace.
+      // Reviewed public prebuilds can share the hosted runner's home name.
+      // Exact file hashes permit only that collision; workspace paths remain forbidden.
       const normalized = text.replace(/\\+/g, '/').toLowerCase();
-      const builderPath = [os.homedir(), root].some(value => normalized.includes(value.replaceAll('\\', '/').toLowerCase()));
-      if (builderPath || !name.startsWith('extension/runtime/node_modules/') && hasPersonalHomePath(text)) throw new Error('RELEASE_PERSONAL_HOME_PATH');
+      const workspacePath = normalized.includes(root.replaceAll('\\', '/').toLowerCase());
+      const homePath = normalized.includes(os.homedir().replaceAll('\\', '/').toLowerCase());
+      const publicHome = homePath && approved.some((/** @type {{file: string, sha256: string, publicCompilerHome?: boolean}} */ entry) =>
+        entry.publicCompilerHome === true && entry.file === name && entry.sha256 === createHash('sha256').update(bytes).digest('hex'));
+      if (workspacePath || homePath && !publicHome || !name.startsWith('extension/runtime/node_modules/') && hasPersonalHomePath(text)) throw new Error('RELEASE_PERSONAL_HOME_PATH');
       if (name === 'extension.vsixmanifest' || required.some(file => name === 'extension/' + file)) contents.set(name, bytes);
       const target = path.join(directory, name); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, bytes);
     }
