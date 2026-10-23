@@ -1,5 +1,13 @@
 # Validation: 0.3.7
 
+## Local recovery and release-gate fixes (2026-10-23, unreleased)
+
+The original CI gate receipt was reproduced disappearing after `git clean -ffdx` and a hard reset in a disposable checkout. The real gate CLI, using synthetic GitHub responses, now writes outside that checkout through the workflow's `RELEASE_CI_RECEIPT`; the same cleanup preserves it. Candidate tests reject receipt repository/commit mismatches, and all required installed-acceptance booleans are tested missing and false. The installed runner and candidate preparation use one shared acceptance predicate.
+
+The real layout's stylesheet error event reproduced having no failure callback. Stylesheet and adapter-initialization failures now report safe UI error codes; the wrapper keeps the iframe inert and presents a retry button. A deterministic timer test covers the 60-second visual-readiness deadline and rejects late readiness after a terminal failure. Retry reconnects through SidebarView and creates a fresh page. Existing handshake/context ordering is preserved.
+
+Strict checks, 45 unit tests and actionlint passed. Native VS Code 1.124.2 Webview checks passed for slow/fast animation dismissal and a real failed CSS request followed by one retry and successful loading. This recovery fixture uses the shipped layout and outer bridge with a synthetic page, not a model service. No real account, paid generation or daily user profile was used. Full hosted manual preparation and fresh installed-VSIX acceptance have not run for these uncommitted fixes; they require a separately authorized push and subsequent verification. No version bump, installation, push or release is included.
+
 ## Shared login closeout (2026-10-22)
 
 The unmodified pinned account initializer reproduced deletion of a synthetic shared grant when its issuer differed from the effective platform. The prepared initializer now raises `DSH_ACCOUNT_PLATFORM_MISMATCH`; the host reports enabled account activation failures before readiness. The real-runtime regression checks the entire credential file stays byte-identical on failure, then changes only the profile platform setting and successfully restarts with the same grant. Existing live desktop sign-out observation and no-credential-copy assertions remain.

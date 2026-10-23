@@ -23,6 +23,8 @@ export class SidebarView implements vscode.WebviewViewProvider, vscode.Disposabl
     view.webview.options = { enableScripts: true, localResourceRoots: [] };
     const messages = view.webview.onDidReceiveMessage((value: unknown) => {
       if (!isClientMessage(value)) return;
+      if (value.type === 'retry') { void this.load(true); return; }
+      if (value.type === 'ui-error') { this.ready = false; this.log.appendLine(value.code); return; }
       if (value.type === 'ready') {
         if (!this.ready) this.trace('sidebar-ready', performance.now() - this.loadStarted);
         this.ready = true; this.post({ type: 'context', context: this.editor.snapshot() });

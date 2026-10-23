@@ -8,6 +8,7 @@ import path from 'node:path';
 import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from '@vscode/test-electron';
 import { prepareTestWorkspace } from './prepare-test-workspace.mjs';
 import { releaseMetadata } from './release-metadata.mjs';
+import { passedInstalledAcceptance } from './installed-acceptance.mjs';
 
 if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('Release acceptance requires Windows x64');
 const root = process.cwd(), metadata = await releaseMetadata(root), output = path.join(root, '.test-work/release');
@@ -81,9 +82,7 @@ for (const version of new Set([minimum, vscodeVersion])) {
   // First-use UI can also create an empty default session. Check the session actually submitted.
   const submitted = headers.filter(header => header.id === result.promptSessionId);
   result.workspaceBound = submitted.length === 1 && submitted[0].cwd?.toLowerCase() === path.join(fixture.directory, 'b').toLowerCase();
-  if (result.vscodeVersion !== version || !result.installedPackage || !result.workspaceBound || !result.unsavedReference ||
-    !result.draftRestored || !result.desktopUnchanged || !result.ownedRuntimeExited || !result.sharedLogin || !result.sharedSignOut || !result.loadingDismissed ||
-    result.interceptedPrompts !== 1 || result.generationCalls !== 0) throw new Error('RELEASE_INSTALLED_SMOKE_INCOMPLETE');
+  if (!passedInstalledAcceptance(result, version)) throw new Error('RELEASE_INSTALLED_SMOKE_INCOMPLETE');
   results.push(result); console.log('Installed VSIX acceptance passed: VS Code ' + version);
 }
 if (createHash('sha256').update(await readFile(archive)).digest('hex') !== sha256) throw new Error('RELEASE_ARCHIVE_CHANGED_DURING_TEST');

@@ -23,7 +23,7 @@ for (const [entry, resultFile] of [['native-runner.cjs', 'native-result.json'], 
   if (info.mtimeMs < started) throw new Error('Native acceptance did not write a fresh result: ' + entry);
   const result = JSON.parse(await readFile(resultPath, 'utf8'));
   if (entry === 'native-runner.cjs' ? result.actualWebviewRoundtrip !== true :
-    entry === 'native-loading.cjs' ? result.cases.length !== 2 :
+    entry === 'native-loading.cjs' ? result.cases.length !== 2 || result.cssFailureRecovery !== true :
     result.ownedRuntimeExited !== true || result.cases.length !== 2) {
     throw new Error('Native acceptance did not complete: ' + entry);
   }

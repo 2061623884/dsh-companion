@@ -1,6 +1,6 @@
 import type { EditorReference, EditorSnapshot } from '../../protocol';
 import type { DshContext } from './dsh-contract';
-import type { SidebarTheme } from './bridge';
+import type { SidebarTheme, UiErrorCode } from './bridge';
 const icons = {
   back: '<path d="m12 5-7 7 7 7M5 12h14"/>',
   history: '<circle cx="12" cy="12" r="8.5"/><path d="M12 6.5V12l3.5 2"/>',
@@ -33,12 +33,13 @@ const tokenMap = {
   '--dsw-alias-turn-trigger-bg': 'widgetBackground', '--dsw-alias-turn-trigger-bg-hover': 'hover',
 };
 export function createSidebarLayout(ctx: DshContext, syncInput: (reference: EditorReference | null, blocked: boolean) => void,
-  trace: (stage: string, durationMs: number) => void, rendered: () => void) {
+  trace: (stage: string, durationMs: number) => void, rendered: () => void, failed: (code: UiErrorCode) => void) {
   const body = document.body;
   body.dataset.dshCompanion = 'sidebar';
   const css = document.createElement('link');
   let stylesReady = false, themeReady = false, renderedOnce = false;
   css.addEventListener('load', () => { stylesReady = true; scheduleSync(); }, { once: true });
+  css.addEventListener('error', () => failed('DSH_UI_STYLE_FAILED'), { once: true });
   css.rel = 'stylesheet'; css.href = '/__dsh_companion/sidebar.css';
   document.head.append(css);
   const header = document.createElement('nav');
@@ -160,7 +161,10 @@ export function createSidebarLayout(ctx: DshContext, syncInput: (reference: Edit
   function scheduleSync() {
     if(disposed || scheduled) return;
     scheduled = true;
-    animation = requestAnimationFrame(() => { scheduled = false; sync(); });
+    animation = requestAnimationFrame(() => {
+      scheduled = false;
+      try { sync(); } catch { failed('DSH_UI_ADAPTER_FAILED'); }
+    });
   }
   const observer = new MutationObserver(scheduleSync);
   observer.observe(body, { childList: true, subtree: true });

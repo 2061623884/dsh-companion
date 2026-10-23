@@ -1,4 +1,5 @@
-import type { EditorReference, EditorSnapshot, ResolvedFile } from '../../protocol';
+import type { EditorReference, EditorSnapshot, ResolvedFile, UiErrorCode } from '../../protocol';
+export type { UiErrorCode } from '../../protocol';
 export interface SidebarTheme { tokens: Record<string, string>; dark: boolean; contrast: boolean }
 type Incoming = { source: 'dsh-companion-host' } & (
   { type: 'editor-context'; context: EditorSnapshot } | { type: 'editor-reference'; reference: EditorReference } |
@@ -37,6 +38,7 @@ export function createEditorBridge(listeners: Listeners) {
   window.addEventListener('message', onMessage);
   return {
     readReference, trace, ready: () => post('hello'), rendered: () => post('ui-ready'),
+    failed: (code: UiErrorCode) => post('ui-error', { code }),
     dispose() {
       window.removeEventListener('message', onMessage);
       for(const finish of pending.values()) finish(undefined, new Error('DSH 页面已关闭'));

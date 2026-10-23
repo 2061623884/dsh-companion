@@ -9,14 +9,19 @@ window.__ModuleLoader__.load({
     function mount(ctx: DshContext) {
       ctx.effect(() => {
         const bridge = createEditorBridge({
-          context: value => layout.setContext(value),
-          reference: value => input.add(value), theme: value => layout.applyTheme(value)
+          context: value => layout!.setContext(value),
+          reference: value => input!.add(value), theme: value => layout!.applyTheme(value)
         });
-        const input = createInputAdapter(ctx, bridge, () => layout.scheduleSync());
-        const layout = createSidebarLayout(ctx, input.sync, bridge.trace, bridge.rendered);
-        const offTheme = ctx.on('theme/change', bridge.ready);
-        bridge.ready();
-        return () => { offTheme(); bridge.dispose(); layout.dispose(); input.dispose(); };
+        let input: ReturnType<typeof createInputAdapter> | undefined;
+        let layout: ReturnType<typeof createSidebarLayout> | undefined;
+        let offTheme: (() => void) | undefined;
+        try {
+          input = createInputAdapter(ctx, bridge, () => layout!.scheduleSync());
+          layout = createSidebarLayout(ctx, input.sync, bridge.trace, bridge.rendered, bridge.failed);
+          offTheme = ctx.on('theme/change', bridge.ready);
+          bridge.ready();
+        } catch { bridge.failed('DSH_UI_ADAPTER_FAILED'); }
+        return () => { offTheme?.(); bridge.dispose(); layout?.dispose(); input?.dispose(); };
       }, 'VS Code: scoped sidebar layout and theme');
     }
     // Keep the page-owned plugin outside the Host's HMR roster.

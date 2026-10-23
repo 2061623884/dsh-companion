@@ -16,8 +16,11 @@ export interface ResolvedFile {
   uri: string; filePath: string; language: string; unsaved: boolean; content: string;
 }
 export type ReferenceValue = EditorReference & { auto: boolean; ownerSessionId: string; contextKey: string };
+export type UiErrorCode = 'DSH_UI_STYLE_FAILED' | 'DSH_UI_ADAPTER_FAILED' | 'DSH_UI_READY_TIMEOUT';
 export type ClientMessage =
   | { type: 'ready' }
+  | { type: 'retry' }
+  | { type: 'ui-error'; code: UiErrorCode }
   | { type: 'read-reference'; requestId: string; uri: string }
   | { type: 'trace'; stage: string; durationMs: number; bytes?: number };
 export type HostMessage =
@@ -35,7 +38,8 @@ export function referenceKey(reference: EditorReference): string {
 export function isClientMessage(value: unknown): value is ClientMessage {
   if (!value || typeof value !== 'object') return false;
   const message = value as Record<string, unknown>;
-  if (message.type === 'ready') return true;
+  if (message.type === 'ready' || message.type === 'retry') return true;
+  if (message.type === 'ui-error') return ['DSH_UI_STYLE_FAILED', 'DSH_UI_ADAPTER_FAILED', 'DSH_UI_READY_TIMEOUT'].includes(message.code as string);
   if (message.type === 'read-reference') return typeof message.requestId === 'string' && typeof message.uri === 'string';
   return message.type === 'trace' && ['reference-read', 'reference-roundtrip', 'reference-serialize', 'send-feedback', 'send-feedback-timeout', 'workspace-bind'].includes(message.stage as string) &&
     typeof message.durationMs === 'number' && Number.isFinite(message.durationMs) && message.durationMs >= 0 &&

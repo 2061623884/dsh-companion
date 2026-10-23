@@ -38,6 +38,7 @@ jobs:
         env:
           RELEASE_SHA: ${{ inputs.commit }}
           GH_TOKEN: ${{ github.token }}
+          RELEASE_CI_RECEIPT: ${{ runner.temp }}/dsh-companion-ci-check.json
         run: node scripts/check-release-ref.mjs
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -72,4 +73,6 @@ jobs:
       - run: npm run check:release
       - run: npm run test:release
       - run: npm run prepare:release
+        env:
+          RELEASE_CI_RECEIPT: ${{ runner.temp }}/dsh-companion-ci-check.json
       # Deliberately no upload, tag, Release, Marketplace or write permission.

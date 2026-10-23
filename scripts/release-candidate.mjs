@@ -7,6 +7,7 @@ import { releaseMetadata } from './release-metadata.mjs';
 import { releaseSource } from './release-source.mjs';
 import { hasPersonalHomePath } from './check-source.mjs';
 import { scanReleaseContents } from './check-release.mjs';
+import { passedInstalledAcceptance } from './installed-acceptance.mjs';
 
 /** @param {Buffer | string} bytes */
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -60,12 +61,12 @@ export async function prepareCandidate(root, environment = process.env) {
   }
   const results = installed.results;
   if (!Array.isArray(results) || results.length !== project.vscodeVersions.length || project.vscodeVersions.some(version =>
-    results.filter(row => row.vscodeVersion === version && row.installedPackage === true && row.workspaceBound === true &&
-      row.unsavedReference === true && row.draftRestored === true && row.desktopUnchanged === true && row.ownedRuntimeExited === true &&
-      row.interceptedPrompts === 1 && row.generationCalls === 0).length !== 1)) throw new Error('CANDIDATE_INSTALLED_EVIDENCE');
+    results.filter(row => passedInstalledAcceptance(row, version)).length !== 1)) throw new Error('CANDIDATE_INSTALLED_EVIDENCE');
   let hosted = null;
   if (environment.GITHUB_ACTIONS === 'true') {
-    const ci = await json(path.join(output, 'ci-check.json'));
+    const receipt = environment.RELEASE_CI_RECEIPT;
+    if (!receipt || !path.isAbsolute(receipt)) throw new Error('CANDIDATE_CI_RECEIPT_PATH_INVALID');
+    const ci = await json(receipt);
     const runId = Number(environment.GITHUB_RUN_ID), attempt = Number(environment.GITHUB_RUN_ATTEMPT);
     if (source.dirty || environment.GITHUB_REF !== 'refs/heads/main' || environment.GITHUB_SHA !== source.commit ||
       environment.GITHUB_REPOSITORY !== project.repository || ci.commit !== source.commit || ci.repository !== project.repository ||

@@ -23,7 +23,8 @@ async function fixture(t) {
   await write(output + filename, bytes); await write(output + 'build-source.json', { ...source, sha256 });
   const archive = { version: '0.0.1', id: 'synthetic.fixture', filename, target: 'win32-x64', files: 2, scannedFiles: 2, reviewedPublicFindings: 0, sha256 };
   const installed = { version: '0.0.1', sha256, results: versions.map(vscodeVersion => ({ vscodeVersion, installedPackage: true,
-    workspaceBound: true, unsavedReference: true, draftRestored: true, desktopUnchanged: true, ownedRuntimeExited: true, interceptedPrompts: 1, generationCalls: 0,
+    workspaceBound: true, unsavedReference: true, draftRestored: true, desktopUnchanged: true, ownedRuntimeExited: true,
+    sharedLogin: true, sharedSignOut: true, loadingDismissed: true, interceptedPrompts: 1, generationCalls: 0,
     privateFixtureOnly: 'not copied to public metadata' })) };
   await write(output + 'archive-check.json', archive); await write(output + 'installed-check.json', installed);
   return { root, write, git, source, bytes, sha256, expected: { commit: source.commit, sha256 }, archive, installed, output };
@@ -98,11 +99,31 @@ test('candidate preparation rejects stale package reports, changed sources and i
   await assert.rejects(prepareCandidate(f.root, {}), /BUILD_SOURCE_MISMATCH/);
 });
 
+test('candidate preparation rejects every missing or false installed acceptance field', async t => {
+  const f = await fixture(t), { prepareCandidate } = await import('../../scripts/release-candidate.mjs');
+  const { installedAcceptanceFields } = await import('../../scripts/installed-acceptance.mjs');
+  for (const field of installedAcceptanceFields) {
+    for (const value of [undefined, false]) {
+      const installed = structuredClone(f.installed);
+      if (value === undefined) delete installed.results[0][field]; else installed.results[0][field] = value;
+      await f.write(f.output + 'installed-check.json', installed);
+      await assert.rejects(prepareCandidate(f.root, {}), /INSTALLED_EVIDENCE/, `${field}=${value}`);
+    }
+  }
+});
+
 test('online rehearsal validates trusted completed runs and version availability using GET only', async t => {
   const f = await fixture(t), { prepareCandidate, previewCandidate } = await import('../../scripts/release-candidate.mjs');
   await f.write(f.output + 'ci-check.json', { repository: 'synthetic/project', commit: f.source.commit, runId: 42 });
   const env = { GITHUB_ACTIONS: 'true', GITHUB_REF: 'refs/heads/main', GITHUB_SHA: f.source.commit,
+    RELEASE_CI_RECEIPT: path.join(f.root, f.output, 'ci-check.json'),
     GITHUB_REPOSITORY: 'synthetic/project', GITHUB_RUN_ID: '7', GITHUB_RUN_ATTEMPT: '2' };
+  for (const ci of [{ repository: 'other/repo', commit: f.source.commit, runId: 42 },
+    { repository: 'synthetic/project', commit: 'e'.repeat(40), runId: 42 }]) {
+    await f.write(f.output + 'ci-check.json', ci);
+    await assert.rejects(prepareCandidate(f.root, env), /HOSTED_CONTEXT/);
+  }
+  await f.write(f.output + 'ci-check.json', { repository: 'synthetic/project', commit: f.source.commit, runId: 42 });
   await assert.rejects(prepareCandidate(f.root, { ...env, GITHUB_SHA: 'f'.repeat(40) }), /HOSTED_CONTEXT/);
   const directory = await prepareCandidate(f.root, env);
   let patch = {}, conflict = '', skipped = false, partial = false, status = 200;

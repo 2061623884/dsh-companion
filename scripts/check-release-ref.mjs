@@ -34,9 +34,11 @@ export async function checkReleaseCI(sha, repository, token, request = fetch) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const sha = process.env.RELEASE_SHA || '';
   if (process.env.GITHUB_REF !== 'refs/heads/main' || !/^[a-f0-9]{40}$/.test(sha)) throw new Error('RELEASE_REQUIRES_MAIN_AND_FULL_SHA');
+  const receipt = process.env.RELEASE_CI_RECEIPT;
+  if (!receipt || !path.isAbsolute(receipt)) throw new Error('RELEASE_CI_RECEIPT_PATH_INVALID');
   execFileSync('git', ['merge-base', '--is-ancestor', sha, 'origin/main'], { stdio: 'pipe' });
   const run = await checkReleaseCI(sha, process.env.GITHUB_REPOSITORY || '', process.env.GH_TOKEN || '');
-  await mkdir('.test-work/release', { recursive: true });
-  await writeFile('.test-work/release/ci-check.json', JSON.stringify({ commit: sha, repository: process.env.GITHUB_REPOSITORY, runId: run }) + '\n');
+  await mkdir(path.dirname(receipt), { recursive: true });
+  await writeFile(receipt, JSON.stringify({ commit: sha, repository: process.env.GITHUB_REPOSITORY, runId: run }) + '\n');
   console.log('Release candidate CI verified: run=' + run);
 }
