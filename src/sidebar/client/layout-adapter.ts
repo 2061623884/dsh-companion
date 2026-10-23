@@ -2,6 +2,7 @@ import type { EditorReference, EditorSnapshot } from '../../protocol';
 import type { DshContext } from './dsh-contract';
 import type { SidebarTheme } from './bridge';
 const icons = {
+  back: '<path d="m12 5-7 7 7 7M5 12h14"/>',
   history: '<circle cx="12" cy="12" r="8.5"/><path d="M12 6.5V12l3.5 2"/>',
   new: '<path d="M20.5 11.7a8.2 8.2 0 0 1-8.3 8.1 8.5 8.5 0 0 1-3.6-.8L3 21l1.9-5.4a8.2 8.2 0 1 1 15.6-3.9Z"/><path d="M12 8v7M8.5 11.5h7"/>',
   plugins: '<path d="M9 4H5a1 1 0 0 0-1 1v4h2a2 2 0 0 1 0 4H4v6a1 1 0 0 0 1 1h4v-2a2 2 0 0 1 4 0v2h6a1 1 0 0 0 1-1v-6h-2a2 2 0 0 1 0-4h2V5a1 1 0 0 0-1-1h-6V2a2 2 0 0 0-4 0Z"/>',
@@ -52,7 +53,8 @@ export function createSidebarLayout(ctx: DshContext, syncInput: (reference: Edit
     ctx.layout.selectPanel(null);
     closeNavigation();
     ctx.layout.closeRightbar();
-  });
+  }, 'back', true);
+  back.hidden = true;
   const history = button('会话历史', () => { ctx.layout.closeRightbar(); ctx.layout.toggleSidebar(); }, 'history', true);
   const newSession = button('新建会话', () => {
     if(bindingError) { bindWorkspace(true); return; }
@@ -144,6 +146,7 @@ export function createSidebarLayout(ctx: DshContext, syncInput: (reference: Edit
     root.querySelector<HTMLElement>('[data-dsh-companion-center]')!.inert = navigationOpen() || rightOpen || bindingPending || !!bindingError;
     const showBack = navigationOpen() || isPanel || !!settings || rightOpen;
     if(back.hidden === showBack) back.hidden = !showBack;
+    if(history.hidden !== showBack) history.hidden = showBack;
     syncEditorContext();
     if(!renderedOnce && stylesReady && themeReady && editorContext && !bindingPending &&
       (bindingError || document.querySelector('[data-composer-input], [role="dialog"]'))) {
