@@ -8,6 +8,8 @@ The DeepSeek name and whale mark belong to their respective owners and are used 
 
 The VSIX bundles public DeepSeek Harness 0.2.1-rc.2 packages (MIT), WorkBuddy Connect 0.6.10 from public Git commit 4738217d156c46f088d424dedc83a66e7308f64a (MIT), pnpm and Node 24.21.0. Their original notices remain in runtime/node_modules and runtime/bin/NODE-LICENSE. No private desktop Host or Electron application is copied. Account configuration, credentials and conversation data are never included in the VSIX or source archive.
 
+As of 2026-10-25, the former `masknull/dsh-workbuddy-connect` download address returns 404. Builds fetch the same pinned commit from the public [Lewis-0710/dsh-workbuddy-connect fork](https://github.com/Lewis-0710/dsh-workbuddy-connect/commit/4738217d156c46f088d424dedc83a66e7308f64a). The commit, version, lockfile integrity and original copyright/license remain unchanged; no newer fork changes are included.
+
 TypeBox 1.3.27 (MIT) is rebundled with esbuild to reduce startup file reads. Its public ESM entry paths, adjacent declarations and shared module identity are preserved. Original license files and notices remain in its package directory; runtime/bundle-manifest.json records the build tool and generated files.
 
 The pinned zod 4.4.3, execa 10.2.0, yaml 2.9.1 and semver 7.8.5 libraries (MIT/ISC as recorded in their retained license files) are also rebundled with esbuild to reduce startup file reads. Public paths, shared library state and declarations remain in their package directories. runtime/startup-bundle-manifest.json records generated artifacts and hashes. Zod's CommonJS distribution and YAML's browser distribution are unchanged.

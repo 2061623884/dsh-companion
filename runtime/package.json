@@ -5,7 +5,7 @@
   "type": "module",
   "dependencies": {
     "@deepseek-ai/dsh": "0.2.1-rc.2",
-    "dsh-workbuddy-connect": "github:masknull/dsh-workbuddy-connect#4738217d156c46f088d424dedc83a66e7308f64a",
+    "dsh-workbuddy-connect": "github:Lewis-0710/dsh-workbuddy-connect#4738217d156c46f088d424dedc83a66e7308f64a",
     "pnpm": "10.28.0",
     "js-yaml": "4.3.2",
     "@deepseek-ai/dsh-app-boot": "0.2.1-rc.2",
