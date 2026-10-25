@@ -22,11 +22,11 @@ function wrapper() {
 }
 
 test('a CSS resource error from the real layout reaches its failure callback', () => {
-  const handlers = {}, element = () => ({ append() {}, remove() {}, setAttribute() {}, addEventListener(name, fn) { handlers[name] = fn; } });
+  const handlers = {}, element = () => ({ children: [], append() {}, remove() {}, setAttribute() {}, addEventListener(name, fn) { handlers[name] = fn; } });
   const body = { ...element(), dataset: {} }, module = { exports: {} }, failures = [];
   const code = buildSync({ entryPoints: ['src/sidebar/client/layout-adapter.ts'], bundle: true, platform: 'node', format: 'cjs', write: false }).outputFiles[0].text;
   vm.runInNewContext(code, { module, exports: module.exports, document: { body, head: { append() {} }, createElement: element, createTextNode: value => value },
-    MutationObserver: class { observe() {} }, requestAnimationFrame() { return 1; } });
+    MutationObserver: class { observe() {} }, requestAnimationFrame() { return 1; }, matchMedia: () => ({ addEventListener() {} }) });
   module.exports.createSidebarLayout({ layout: { closeRightbar() {}, panelInfo: { subscribe: () => () => {} } }, sessions: { list: { subscribe: () => () => {} } } },
     () => {}, () => {}, () => {}, code => failures.push(code));
   assert.equal(typeof handlers.error, 'function', 'stylesheet errors need a failure exit');

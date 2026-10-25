@@ -25,10 +25,10 @@ export interface DshContext {
     panelInfo: Store<{ activePanelId: string | null }>;
   };
   uiWorkspace: { startSession(id: string | null): void; openWorkspace(id: string): Promise<void> };
-  workspaces: { create(options: { path: string }): Promise<{ workspaceId: string }> };
-  slots: { entries(name: 'sidebar.settings'): { store: { create(): { actions: { open(): void; close(): void } } } }[] };
+  workspaces: { create(options: { path: string }): Promise<{ workspaceId: string; path: string }> };
+  slots: { entries(name: 'sidebar.settings'): { store: { create(): { getSnapshot(): { open: boolean }; actions: { open(): void; close(): void } } } }[] };
   sessions: {
-    list: Store<{ byId: Record<string, { id: string; retainedBy: Record<string, number> }> }>;
+    list: Store<{ byId: Record<string, { id: string; cwd: string; retainedBy: Record<string, number> }> }>;
     binding(id: string): SessionBinding;
   };
   conversation: { input: { for(context: SessionBinding['ctx']): Input } };

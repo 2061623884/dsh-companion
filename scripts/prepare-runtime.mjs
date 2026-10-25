@@ -6,6 +6,7 @@ import { build, version as bundlerVersion } from 'esbuild';
 import { prepareWorkBuddy } from './prepare-workbuddy.mjs';
 import { prepareStartupLeaves } from './prepare-startup-leaves.mjs';
 import { prepareSharedLogin } from './prepare-shared-login.mjs';
+import { prepareStartupResolution } from './prepare-startup-resolution.mjs';
 
 if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('Packaging requires Windows x64');
 const { version, archiveSha256: expected } = JSON.parse(await readFile('runtime/node-version.json', 'utf8'));
@@ -56,3 +57,4 @@ console.log(`Prepared ${manifest.name} ${manifest.version}: ${Object.keys(bundle
 await prepareWorkBuddy(resolve('runtime'));
 await prepareSharedLogin(resolve('runtime'));
 await prepareStartupLeaves(resolve('runtime'));
+await prepareStartupResolution(resolve('runtime'));

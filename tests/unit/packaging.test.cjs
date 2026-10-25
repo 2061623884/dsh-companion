@@ -45,7 +45,20 @@ test('runtime preflight rejects missing, stale and mismatched artifacts without 
     packages.push({ ...leaf, outputs: [{ path: 'bundle.js', sha256 }], facades: [{ path: 'entry.js', sha256 }] });
   }
   await write('runtime/startup-bundle-manifest.json', JSON.stringify({ packages }));
+  const resolver = 'runtime/node_modules/@deepseek-ai/dsh-app-boot/lib/';
+  const resolverSource = await fs.readFile(path.join(__dirname, '../fixtures/startup-resolution-collector.txt'), 'utf8');
+  const index = JSON.stringify({ version: '0.2.1-rc.2', entries: [{ name: 'fixture' }], manifests: [{ path: 'package.json',
+    sha256: createHash('sha256').update(await fs.readFile(path.join(root, 'runtime/package.json'))).digest('hex') }] });
+  await write(resolver + 'companion-installation-scope.json', index);
+  await write(resolver + 'index.js', resolverSource + '\n// Companion installation index SHA256: ' + createHash('sha256').update(index).digest('hex') + '\n');
   assert.equal((await checkRuntimeFiles(root)).version, 'fixture-version');
+  await write(resolver + 'companion-installation-scope.json', index.replace('"name":"fixture"', '"name":"corrupt-mapping"'));
+  await assert.rejects(checkRuntimeFiles(root), /Stale startup resolution index/);
+  await write(resolver + 'companion-installation-scope.json', index);
+  const runtimeManifest = await fs.readFile(path.join(root, 'runtime/package.json'), 'utf8');
+  await write('runtime/package.json', runtimeManifest + '\n');
+  await assert.rejects(checkRuntimeFiles(root), /Stale startup resolution index/);
+  await write('runtime/package.json', runtimeManifest);
   const protectedAccount = await fs.readFile(path.join(root, account, 'lib/index.js'), 'utf8');
   await write(account + 'lib/index.js', accountSource);
   await assert.rejects(checkRuntimeFiles(root), /Shared login protection is not prepared/);

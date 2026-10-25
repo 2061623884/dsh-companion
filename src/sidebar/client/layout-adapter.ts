@@ -1,8 +1,8 @@
 import type { EditorReference, EditorSnapshot } from '../../protocol';
 import type { DshContext } from './dsh-contract';
 import type { SidebarTheme, UiErrorCode } from './bridge';
+import { createSidebarNavigation } from './navigation-adapter';
 const icons = {
-  back: '<path d="m12 5-7 7 7 7M5 12h14"/>',
   history: '<circle cx="12" cy="12" r="8.5"/><path d="M12 6.5V12l3.5 2"/>',
   new: '<path d="M20.5 11.7a8.2 8.2 0 0 1-8.3 8.1 8.5 8.5 0 0 1-3.6-.8L3 21l1.9-5.4a8.2 8.2 0 1 1 15.6-3.9Z"/><path d="M12 8v7M8.5 11.5h7"/>',
   plugins: '<path d="M9 4H5a1 1 0 0 0-1 1v4h2a2 2 0 0 1 0 4H4v6a1 1 0 0 0 1 1h4v-2a2 2 0 0 1 4 0v2h6a1 1 0 0 0 1-1v-6h-2a2 2 0 0 1 0-4h2V5a1 1 0 0 0-1-1h-6V2a2 2 0 0 0-4 0Z"/>',
@@ -46,41 +46,52 @@ export function createSidebarLayout(ctx: DshContext, syncInput: (reference: Edit
   header.id = 'dsh-companion-toolbar'; header.setAttribute('aria-label', 'DSH 侧栏工具栏');
   let editorContext: EditorSnapshot | null = null, boundPath: string | null | undefined = null, workspaceId: string | null = null;
   let bindingPending = false, bindingSequence = 0, bindingError = '';
+  let finishInitialSelection: (() => void) | undefined;
   const contextBar = document.createElement('div'); contextBar.id = 'dsh-companion-context';
   const workspaceLabel = button('工作区', () => bindWorkspace(true));
   contextBar.append(workspaceLabel);
-  const back = button('返回聊天', () => {
+  const history = button('历史会话', () => {
     ctx.slots.entries('sidebar.settings')[0].store.create().actions.close();
     ctx.layout.selectPanel(null);
-    closeNavigation();
     ctx.layout.closeRightbar();
-  }, 'back', true);
-  back.hidden = true;
-  const history = button('会话历史', () => { ctx.layout.closeRightbar(); ctx.layout.toggleSidebar(); }, 'history', true);
+    navigation.toggle();
+  }, 'history', true);
   const newSession = button('新建会话', () => {
     if(bindingError) { bindWorkspace(true); return; }
-    ctx.layout.closeRightbar(); ctx.uiWorkspace.startSession(workspaceId); closeNavigation();
+    ctx.slots.entries('sidebar.settings')[0].store.create().actions.close();
+    ctx.layout.selectPanel(null);
+    ctx.layout.closeRightbar(); ctx.uiWorkspace.startSession(workspaceId); navigation.closeDrawer();
   }, 'new', true);
-  header.append(back, history, newSession);
-  const spacer = document.createElement('span'); spacer.className = 'dsh-companion-spacer'; header.append(spacer);
+  header.append(newSession, history);
   for(const [label, panel] of [['插件', 'plugins'], ['自动化任务', 'schedules']] as const) {
     header.append(button(label, () => {
-      ctx.slots.entries('sidebar.settings')[0].store.create().actions.close();
-      ctx.layout.closeRightbar(); ctx.layout.selectPanel(panel); closeNavigation();
+      const settings = ctx.slots.entries('sidebar.settings')[0].store.create();
+      const selected = !settings.getSnapshot().open && ctx.layout.panelInfo.getSnapshot().activePanelId === panel;
+      settings.actions.close();
+      ctx.layout.closeRightbar(); ctx.layout.selectPanel(selected ? null : panel); navigation.closeDrawer();
     }, panel, true));
   }
-  header.append(button('设置与账号', () => {
+  header.append(button('设置', () => {
+    const settings = ctx.slots.entries('sidebar.settings')[0].store.create();
     ctx.layout.closeRightbar();
-    closeNavigation();
-    ctx.slots.entries('sidebar.settings')[0].store.create().actions.open();
+    ctx.layout.selectPanel(null);
+    navigation.closeDrawer();
+    if(settings.getSnapshot().open) settings.actions.close();
+    else settings.actions.open();
   }, 'settings', true));
   body.append(header);
+  Array.from(header.children).forEach((entry, index) => entry.setAttribute('style', '--dsh-companion-index:' + index));
+  const navigation = createSidebarNavigation(ctx.layout, header, scheduleSync);
 
   function button(label: string, action: () => void, icon?: keyof typeof icons, iconOnly = false) {
     const element = document.createElement('button');
     element.type = 'button'; element.setAttribute('aria-label', label);
     if(icon) element.innerHTML = '<svg class="dsh-companion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + icons[icon] + '</svg>';
-    if(iconOnly) { element.className = 'dsh-companion-icon-button'; element.title = label; }
+    if(iconOnly) {
+      element.className = 'dsh-companion-icon-button'; element.title = label;
+      const text = document.createElement('span'); text.className = 'dsh-companion-label'; text.textContent = label;
+      element.append(text);
+    }
     else element.append(document.createTextNode(label));
     element.addEventListener('click', action);
     return element;
@@ -88,6 +99,7 @@ export function createSidebarLayout(ctx: DshContext, syncInput: (reference: Edit
   async function bindWorkspace(force = false) {
     const path = editorContext?.workspacePath;
     if(!force && path === boundPath) return;
+    finishInitialSelection?.();
     boundPath = path; workspaceId = null; bindingError = ''; const sequence = ++bindingSequence;
     if(!path) { bindingPending = false; sync(); return; }
     const started = performance.now();
@@ -96,7 +108,21 @@ export function createSidebarLayout(ctx: DshContext, syncInput: (reference: Edit
       const workspace = await ctx.workspaces.create({ path });
       if(sequence !== bindingSequence) return;
       workspaceId = workspace.workspaceId;
-      await ctx.uiWorkspace.openWorkspace(workspaceId);
+      if(!force && !Object.values(ctx.sessions.list.getSnapshot().byId).some(session => session.retainedBy.mainView > 0)) {
+        // Let native restoration finish before opening a competing blank. Bound
+        // this short coalescing window: an empty/deleted selection may not restore.
+        await new Promise<void>(resolve => {
+          const off = ctx.sessions.list.subscribe(() => {
+            if(Object.values(ctx.sessions.list.getSnapshot().byId).some(session => session.retainedBy.mainView > 0)) finish();
+          });
+          const finish = () => { clearTimeout(timeout); off(); finishInitialSelection = undefined; resolve(); };
+          const timeout = setTimeout(finish, 200);
+          finishInitialSelection = finish;
+        });
+      }
+      if(sequence !== bindingSequence) return;
+      const current = Object.values(ctx.sessions.list.getSnapshot().byId).find(session => session.retainedBy.mainView > 0);
+      if(force || current?.cwd !== workspace.path) await ctx.uiWorkspace.openWorkspace(workspaceId);
     } catch(error) {
       if(sequence === bindingSequence) bindingError = (error as Error).message;
     } finally {
@@ -118,8 +144,6 @@ export function createSidebarLayout(ctx: DshContext, syncInput: (reference: Edit
     syncInput(editorContext?.reference || null, bindingPending);
   }
   function frame() { return document.querySelector<HTMLElement>('[data-slot="sidebar"]')?.parentElement!.parentElement; }
-  function navigationOpen() { const root = frame(); return root && !root.hasAttribute('data-sidebar-collapsed'); }
-  function closeNavigation() { if(navigationOpen()) ctx.layout.toggleSidebar(); }
   let observedFrame: HTMLElement | null = null;
   function sync() {
     const root = frame();
@@ -141,13 +165,9 @@ export function createSidebarLayout(ctx: DshContext, syncInput: (reference: Edit
       settings.setAttribute('data-dsh-companion-settings', '');
       settings.parentElement!.setAttribute('data-dsh-companion-settings-overlay', '');
     }
-    const isPanel = ctx.layout.panelInfo.getSnapshot().activePanelId !== null;
-    history.setAttribute('aria-expanded', String(navigationOpen()));
+    const drawerOpen = navigation.sync(root);
     const rightOpen = !!document.querySelector('[data-sidebar-right-open]');
-    root.querySelector<HTMLElement>('[data-dsh-companion-center]')!.inert = navigationOpen() || rightOpen || bindingPending || !!bindingError;
-    const showBack = navigationOpen() || isPanel || !!settings || rightOpen;
-    if(back.hidden === showBack) back.hidden = !showBack;
-    if(history.hidden !== showBack) history.hidden = showBack;
+    root.querySelector<HTMLElement>('[data-dsh-companion-center]')!.inert = drawerOpen || rightOpen || bindingPending || !!bindingError;
     syncEditorContext();
     if(!renderedOnce && stylesReady && themeReady && editorContext && !bindingPending &&
       (bindingError || document.querySelector('[data-composer-input], [role="dialog"]'))) {
@@ -170,13 +190,6 @@ export function createSidebarLayout(ctx: DshContext, syncInput: (reference: Edit
   observer.observe(body, { childList: true, subtree: true });
   const offPanel = ctx.layout.panelInfo.subscribe(scheduleSync);
   const offSessions = ctx.sessions.list.subscribe(scheduleSync);
-
-  const selectSession = (event: MouseEvent) => {
-    if((event.target as Element).closest('[data-row-key^="session:"]') && !(event.target as Element).closest('button')) {
-      requestAnimationFrame(closeNavigation);
-    }
-  };
-  body.addEventListener('click', selectSession);
   function applyTheme(theme: SidebarTheme) {
     const { tokens, dark, contrast } = theme;
     for(const [name, key] of Object.entries(tokenMap)) {
@@ -200,7 +213,9 @@ export function createSidebarLayout(ctx: DshContext, syncInput: (reference: Edit
     applyTheme, scheduleSync,
     dispose() {
       disposed = true; ++bindingSequence; observer.disconnect(); cancelAnimationFrame(animation); offPanel(); offSessions();
-      contextBar.remove(); header.remove(); css.remove(); body.removeEventListener('click', selectSession); delete body.dataset.dshCompanion;
+      finishInitialSelection?.();
+      navigation.dispose();
+      contextBar.remove(); header.remove(); css.remove(); delete body.dataset.dshCompanion;
     }
   };
 }

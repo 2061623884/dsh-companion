@@ -7,6 +7,7 @@ import { createHash } from 'node:crypto';
 import { adaptWorkBuddyStatusClient } from '../src/sidebar/client/workbuddy-status.mjs';
 import { startupLeaves } from './prepare-startup-leaves.mjs';
 import { prepareSharedLogin } from './prepare-shared-login.mjs';
+import { prepareStartupResolution } from './prepare-startup-resolution.mjs';
 
 /** Check prepared artifacts without installing, repairing or starting DSH.
  * @param {string} root
@@ -30,6 +31,7 @@ export async function checkRuntimeFiles(root) {
   const client = await readFile(path.join(path.dirname(providerEntry), 'client.js'), 'utf8');
   if (adaptWorkBuddyStatusClient(client) !== client) throw new Error('WorkBuddy status UI is not prepared');
   await prepareSharedLogin(path.join(root, 'runtime'), true);
+  await prepareStartupResolution(path.join(root, 'runtime'), true);
   for (const name of ['host.mjs', 'import.mjs', 'workbuddy-auth.mjs']) {
     const built = await readFile(path.join(root, 'runtime', name)), source = await readFile(path.join(root, 'src/runtime', name));
     if (!built.equals(source)) throw new Error('Stale runtime entry: ' + name + '; run build:runtime');
@@ -64,5 +66,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   if (version.stdout.trim() !== 'v' + result.nodeVersion) throw new Error('Bundled Node version differs from its verified preparation metadata');
   await execute(node, ['tests/typebox-contract.mjs', path.join(root, 'runtime')], { windowsHide: true });
   await execute(node, ['tests/startup-leaf-contract.mjs', path.join(root, 'runtime')], { windowsHide: true });
+  await execute(node, ['--expose-internals', 'tests/startup-resolution-contract.mjs', path.join(root, 'runtime')], { windowsHide: true });
   console.log('Runtime files, versions, licenses and startup dependency contracts verified');
 }

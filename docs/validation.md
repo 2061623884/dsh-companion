@@ -1,4 +1,20 @@
-# Validation: 0.3.7
+# Validation
+
+## 0.3.10 navigation and release checks (2026-10-25, local)
+
+Strict source/script checks, 52 unit tests and 16 runtime integration tests passed. All five native acceptance groups passed in isolated Microsoft VS Code 1.124.2 profiles. At both 960px and 420px, settings, plugins and automation return to the original chat on a second click and preserve the current draft; switching between these pages also returns correctly. New-session and history behavior, draft/reference retention, pointer reentry, transitions and startup restoration remain covered.
+
+The README diagram contains only synthetic content and filenames. Its rendered PNG was visually inspected and contains no text or EXIF metadata; the SVG uses local fragment references only. Current source, 38 existing reachable commits and 380 historical file blobs passed secret/personal-path checks; historical author emails are GitHub noreply or local placeholders. The archive-scanner canary test passed. Final package hashes, full archive scanning and acceptance in both supported test editors are recorded with the published Release; these checks use synthetic data and intercepted requests, not real model calls. Local builds do not establish hosted build provenance.
+
+## Cohesion and coupling review (2026-10-24, local 0.3.9 worktree)
+
+Review baseline: d6e5c5af7d2a06ab52d83afc5233b81c69b49da4 through the current worktree, including untracked source/tests and the preceding navigation/startup changes. Standards review found two P2 issues: a deferred session-selection callback surviving layout disposal, and preflight failing to detect changed installation-index mappings. Spec review found two P2 issues: pointer reentry during automatic exit still closing the sidebar, and the same index integrity gap. All three distinct defects were reproduced before repair. Both review axes rechecked the fixes without finding another definite issue in this scope.
+
+Navigation state, transition reasons, hover boundaries, listeners, timers and the deferred selection frame now belong to one private navigation adapter. Layout retains workspace binding, toolbar composition and rendering coordination. Pointer reentry reverses an automatic exit; an explicit session selection still closes the drawer. Disposal cancels pending callbacks. The closing sidebar remains hit-testable during its exit animation. Runtime index preparation now binds exact index bytes to the prepared resolver with SHA-256, in addition to checking its input manifests. Preflight rejects changed mappings and changed input manifests independently, without repair or runtime startup.
+
+Strict source/script checks, all 52 unit tests, all 16 integration tests, runtime preflight, source privacy inventory and diff whitespace checks passed. All five native acceptance groups passed in Microsoft VS Code 1.124.2 with isolated synthetic profiles: editor/Webview transport, send-failure recovery, loading recovery, navigation, and startup. At both 960px and 420px, the real renderer hit-tested the exiting sidebar with elementFromPoint before dispatching pointer reentry, restored expansion, observed intermediate opening/closing positions, preserved draft/reference content and exercised all five entrances. This uses browser events inside the real Webview, not physical mouse automation.
+
+The native startup sample reached backend readiness in 2,169ms and usable chat in 3,616ms; fresh page recreations took 608/686ms and created one session each. These are local process-cold/page measurements without flushing OS caches, not a new comparative speedup claim. No real model request, daily configuration/session modification, daily-extension installation, version bump, commit, push or publication was performed. Core module boundaries and the pinned DSH dependency policy remain intact; no broad rewrite was introduced.
 
 ## Local recovery and release-gate fixes (2026-10-23, unreleased)
 

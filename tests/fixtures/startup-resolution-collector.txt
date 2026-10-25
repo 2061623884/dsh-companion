@@ -1,0 +1,56 @@
+function collectInstallationScopePackages(installAnchor, skippedBundles) {
+	const canonicalAnchor = join(realModuleDirectory(dirname(installAnchor)), basename(installAnchor));
+	// Companion's shipped installation is immutable; profiles remain dynamic.
+	const companionRoot = realModuleDirectory(fileURLToPath(new URL('../../../../', import.meta.url)));
+	if (canonicalAnchor === join(companionRoot, 'package.json')) {
+		const { entries } = JSON.parse(readFileSync(new URL('./companion-installation-scope.json', import.meta.url), 'utf8'));
+		return {
+			packageNames: new Set(entries.map(row => row.name)),
+			packageDirs: new Map(entries.map(row => [row.name, join(companionRoot, row.packageDir)])),
+			declarers: new Map(entries.map(row => [row.name, join(companionRoot, row.declarer)])),
+			versions: new Map(entries.map(row => [row.name, row.version]))
+		};
+	}
+	const appManifest = readPackageManifest(canonicalAnchor);
+	const links = /* @__PURE__ */ new Map();
+	const declarers = /* @__PURE__ */ new Map();
+	const versions = /* @__PURE__ */ new Map();
+	/* v8 ignore next -- a real app manifest always declares its name */
+	if (appManifest.name !== void 0) {
+		links.set(appManifest.name, dirname(installAnchor));
+		declarers.set(appManifest.name, canonicalAnchor);
+		versions.set(appManifest.name, appManifest.version);
+	}
+	const queue = [{
+		anchor: canonicalAnchor,
+		manifest: appManifest
+	}];
+	for (let next = queue.shift(); next !== void 0; next = queue.shift())
+ /* v8 ignore next -- a real app manifest always declares dependencies */
+	for (const dep of profileDependencyNames(next.manifest)) {
+		if (links.has(dep)) continue;
+		const dir = packageDirFromAnchor(next.anchor, dep);
+		if (dir === void 0) continue;
+		const manifestPath = join(realModuleDirectory(dir), "package.json");
+		let manifest;
+		try {
+			manifest = skippedBundles.has(dep) ? readProfileManifest("dsh", dir) : readPackageManifest(manifestPath);
+		} catch (error) {
+			if (!skippedBundles.has(dep)) throw error;
+			continue;
+		}
+		links.set(dep, dir);
+		declarers.set(dep, next.anchor);
+		versions.set(dep, manifest.version);
+		queue.push({
+			anchor: manifestPath,
+			manifest
+		});
+	}
+	return {
+		packageNames: new Set(links.keys()),
+		packageDirs: links,
+		declarers,
+		versions
+	};
+}

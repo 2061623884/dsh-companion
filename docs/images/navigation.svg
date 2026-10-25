@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="850" viewBox="0 0 1280 850" role="img" aria-labelledby="title desc">
+  <title id="title">DSH Companion：把聊天留在项目旁边</title>
+  <desc id="desc">交互示意，全部为演示内容。收起时五个图标在右上角横排；展开历史后，五个入口带文字在右侧竖排。设置、插件和自动化任务再次点击返回聊天。</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#101b2b"/><stop offset="1" stop-color="#162b36"/></linearGradient>
+    <g id="new"><path d="M20.5 11.7a8.2 8.2 0 0 1-8.3 8.1 8.5 8.5 0 0 1-3.6-.8L3 21l1.9-5.4a8.2 8.2 0 1 1 15.6-3.9Z"/><path d="M12 8v7M8.5 11.5h7"/></g>
+    <g id="history"><circle cx="12" cy="12" r="8.5"/><path d="M12 6.5V12l3.5 2"/></g>
+    <g id="plugins"><path d="M9 4H5a1 1 0 0 0-1 1v4h2a2 2 0 0 1 0 4H4v6a1 1 0 0 0 1 1h4v-2a2 2 0 0 1 4 0v2h6a1 1 0 0 0 1-1v-6h-2a2 2 0 0 1 0-4h2V5a1 1 0 0 0-1-1h-6V2a2 2 0 0 0-4 0Z"/></g>
+    <g id="tasks"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M7.5 3v4M16.5 3v4M3.5 10h17M8 14h3M8 17h6"/></g>
+    <g id="settings"><path d="m9.5 3-.5 2-2 1.2-2-.6L2.5 10 4 11.4v2.2L2.5 15 5 19.4l2-.6L9 20l.5 2h5l.5-2 2-1.2 2 .6 2.5-4.4-1.5-1.4v-2.2l1.5-1.4L19 5.6l-2 .6L15 5l-.5-2Z"/><circle cx="12" cy="12.5" r="3"/></g>
+    <style>text{font-family:'Segoe UI','Microsoft YaHei',sans-serif;fill:#e4edf4} .muted{fill:#95a8ba}.accent{fill:#7ac8ff}.small{font-size:14px}.body{font-size:16px}.icon{fill:none;stroke:#bfcbd6;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}</style>
+  </defs>
+  <rect width="1280" height="850" rx="20" fill="url(#bg)"/>
+  <text x="44" y="55" class="accent" font-size="15" letter-spacing="3">DSH COMPANION · VS CODE</text>
+  <text x="44" y="106" font-size="34" font-weight="600">把聊天留在项目旁边</text>
+  <text x="44" y="141" class="muted" font-size="17">代码引用、会话历史、工具与设置，在同一侧栏中完成。</text>
+  <rect x="1080" y="42" width="156" height="30" rx="15" fill="#24394a"/>
+  <text x="1158" y="63" text-anchor="middle" class="small">交互示意 · 演示内容</text>
+
+  <text x="44" y="191" font-size="17" font-weight="600">01  专注聊天</text>
+  <text x="444" y="191" font-size="17" font-weight="600">02  展开历史，五个入口统一切换</text>
+  <rect x="44" y="210" width="372" height="455" rx="9" fill="#1f1f1f" stroke="#3c4a55"/>
+  <path d="M44 250H416" stroke="#343a40"/>
+  <text x="62" y="235" class="small muted">DSH Companion</text>
+  <g class="icon" transform="translate(252 219) scale(.8)"><use href="#new"/><use href="#history" x="37"/><use href="#plugins" x="74"/><use href="#tasks" x="111"/><use href="#settings" x="148"/></g>
+  <rect x="88" y="280" width="306" height="58" rx="7" fill="#363a40"/>
+  <text x="103" y="305" class="body">解释当前选区，并补充边界用例。</text>
+  <text x="103" y="325" class="small muted">演示提问</text>
+  <text x="66" y="377" class="body">这段函数会规范化输入，</text>
+  <text x="66" y="404" class="body">再返回去重后的结果。</text>
+  <text x="66" y="446" class="muted small">建议覆盖空输入、重复值与大小写。</text>
+  <rect x="62" y="544" width="336" height="102" rx="9" fill="#252526" stroke="#50565e"/>
+  <text x="76" y="572" class="muted small">继续提问，或引用当前代码…</text>
+  <rect x="76" y="590" width="184" height="24" rx="4" fill="#2e3944"/>
+  <text x="87" y="607" class="small accent">utils.ts · 选区 12–24</text>
+  <text x="76" y="633" class="small muted">模型 ▾</text>
+  <circle cx="377" cy="627" r="12" fill="#435563"/><path d="M377 633V621m-4 4 4-4 4 4" fill="none" stroke="#e4edf4" stroke-width="1.5"/>
+
+  <rect x="444" y="210" width="792" height="455" rx="9" fill="#1f1f1f" stroke="#3c4a55"/>
+  <path d="M956 210V665" stroke="#46505c"/>
+  <rect x="957" y="211" width="278" height="453" rx="8" fill="#252526"/>
+  <text x="466" y="241" class="small muted">宽窗口：聊天与历史并排显示</text>
+  <rect x="540" y="278" width="392" height="57" rx="7" fill="#363a40"/>
+  <text x="558" y="310" class="body">为这个函数补充单元测试。</text>
+  <text x="466" y="375" class="body">可以从输入边界和返回值开始：</text>
+  <rect x="466" y="394" width="465" height="104" rx="6" fill="#181b20"/>
+  <text x="482" y="422" font-size="15" class="accent">describe('normalize', () =&gt; {</text>
+  <text x="498" y="450" font-size="15" class="muted">// 空输入、重复项、大小写</text>
+  <text x="482" y="478" font-size="15" class="accent">});</text>
+  <rect x="460" y="544" width="479" height="102" rx="9" fill="#252526" stroke="#50565e"/>
+  <text x="476" y="572" class="muted small">继续提问，或引用当前代码…</text>
+  <rect x="476" y="590" width="184" height="24" rx="4" fill="#2e3944"/>
+  <text x="487" y="607" class="small accent">utils.ts · 选区 12–24</text>
+  <text x="476" y="633" class="small muted">模型 ▾</text>
+  <circle cx="917" cy="627" r="12" fill="#435563"/><path d="M917 633V621m-4 4 4-4 4 4" fill="none" stroke="#e4edf4" stroke-width="1.5"/>
+  <rect x="968" y="258" width="256" height="32" rx="4" fill="#36424d"/>
+  <g class="icon" transform="translate(978 228) scale(.8)"><use href="#new"/><use href="#history" y="45"/><use href="#plugins" y="90"/><use href="#tasks" y="135"/><use href="#settings" y="180"/></g>
+  <g class="body"><text x="1009" y="243">新建会话</text><text x="1009" y="279">历史会话</text><text x="1009" y="315">插件</text><text x="1009" y="351">自动化任务</text><text x="1009" y="387">设置</text></g>
+  <path d="M973 418H1218" stroke="#3a424b"/>
+  <text x="979" y="451" class="small muted">会话</text>
+  <text x="979" y="488" class="small">补充函数边界测试</text>
+  <text x="979" y="523" class="small muted">整理项目结构</text>
+  <text x="979" y="558" class="small muted">解释输入处理逻辑</text>
+
+  <rect x="44" y="696" width="1192" height="110" rx="10" fill="#233747"/>
+  <text x="66" y="729" font-size="17" font-weight="600">同一入口，打开与返回</text>
+  <text x="66" y="762" class="body">设置 / 插件 / 自动化任务</text>
+  <path d="M350 756H400m-8-5 8 5-8 5" stroke="#7ac8ff" fill="none" stroke-width="2"/>
+  <text x="419" y="762" class="body">点击打开</text>
+  <path d="M520 756H570m-8-5 8 5-8 5" stroke="#7ac8ff" fill="none" stroke-width="2"/>
+  <text x="589" y="762" class="body">再次点击，返回原聊天</text>
+  <text x="923" y="738" class="small muted">窄窗口：历史以抽屉展开</text>
+  <text x="923" y="765" class="small muted">鼠标离开：带动画自动收起</text>
+  <text x="44" y="830" class="small muted">示意图使用合成文案与文件名；实际界面跟随 VS Code 主题和窗口宽度。</text>
+</svg>
