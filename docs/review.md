@@ -1,4 +1,14 @@
-# Review: 0.3.7
+# Structure review: 0.4.0-preview.3
+
+The product remains a Desktop client. The review identified legacy independent-runtime source mixed into `src/`, a misleading runtime name for the authenticated Desktop proxy, and VSCE scanning large ignored fixture trees. Legacy source now lives in `tests/fixtures/legacy-runtime/`; the proxy is `DesktopConnection` under `src/desktop/`; packaging stages only the distributable files. Editor acceptance profiles use OS temporary directories, outside the repository's Node package scope: CLI installation of both old and new VSIX files succeeds there, while the old editor can crash during module resolution under the repository. Existing consumers were updated directly, without compatibility aliases or another facade.
+
+Update checks sit behind `DesktopUpdates.check()` and do not depend on the proxy, editor or browser adapter. The extension owns notification presentation and lifetime. Existing `EditorContext`, `ReferenceController` and `SidebarView` retain their focused responsibilities. The private DSH DOM integration remains in `sidebar/client/`, because upstream UI changes still require explicit compatibility work.
+
+The reported transient console was traced to an unrelated periodic background health task and corrected at that task's launcher. Desktop discovery and background launch already use hidden subprocesses; the regression checks preserve that behavior. No speculative process launcher, global window-hiding mechanism or duplicate runtime was added.
+
+This is a scoped local review, not a claim that arbitrary future Desktop versions remain compatible. Validation commands and local evidence are recorded separately.
+
+# Historical review: 0.3.7
 
 ## Shared login closeout
 
@@ -66,7 +76,7 @@ Final verification includes 24 unit and 11 integration checks, both native accep
 
 Fixed baseline d78e3ef45aab2065aadb37a14d7b5ef8111f4d9f to the working tree; no new commits. Standards and Spec were reviewed by separate parallel agents against the Reliability round section of docs/spec.md and the existing ownership/privacy rules.
 
-Standards: one boundary finding was repaired. The provider status-card expression and locale assumptions originally lived in runtime preparation; they now belong to src/sidebar/client/workbuddy-status.mjs behind adaptWorkBuddyStatusClient. The preparation script calls that private compatibility boundary, checks the pinned provider construction/status seam and fails on incompatible anchors. Re-review closed the finding and found no remaining actionable standard or cohesion/coupling issue.
+Standards: one boundary finding was repaired. The provider status-card expression and locale assumptions originally lived in runtime preparation; they now belong to tests/fixtures/legacy-runtime/workbuddy-status.mjs behind adaptWorkBuddyStatusClient. The preparation script calls that private compatibility boundary, checks the pinned provider construction/status seam and fails on incompatible anchors. Re-review closed the finding and found no remaining actionable standard or cohesion/coupling issue.
 
 Spec: zero actionable findings. The review checked protocol validation, adapter-only readiness, startup cancellation/deadlines, owner retention during shutdown, atomic migration records and non-destructive corruption failure, borrowed authorization usability/expiry and preservation of desktop ownership. No stage-two dependency/CI/framework work was introduced. Startup and first-send conclusions remain bounded by the measurements in docs/validation.md: a slow file-access startup reproduced, while native synthetic first-send acceptance did not reproduce a freeze. No model-latency or disk-cold upper-bound claim is made.
 
@@ -100,7 +110,7 @@ Fixed baseline: 0a6610a8987c1cadff75605616e6576b96e151df. Standards and Spec wer
 
 Four confirmed findings were repaired: retain the owner pipe until the owned process exits after saving; preserve safe shutdown errors; register the initial client before boot so rapid failures remain visible; clean unique temporary attachment files if an atomic replacement fails. Final review found no remaining actionable Standards issues.
 
-RuntimeConnection retains start/reconnect/dispose as its interface. RuntimeClient owns the control lease, host owns bootstrap/lifecycle, and import owns migration. EditorContext and ReferenceController remain independent of runtime details; DSH object and DOM assumptions stay in the private browser adapter. The review found no new actionable coupling, interface leakage or speculative abstractions.
+DesktopConnection retains start/reconnect/dispose as its interface. RuntimeClient owns the control lease, host owns bootstrap/lifecycle, and import owns migration. EditorContext and ReferenceController remain independent of runtime details; DSH object and DOM assumptions stay in the private browser adapter. The review found no new actionable coupling, interface leakage or speculative abstractions.
 
 ## Spec
 

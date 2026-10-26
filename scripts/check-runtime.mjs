@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createHash } from 'node:crypto';
-import { adaptWorkBuddyStatusClient } from '../src/sidebar/client/workbuddy-status.mjs';
+import { adaptWorkBuddyStatusClient } from '../tests/fixtures/legacy-runtime/workbuddy-status.mjs';
 import { startupLeaves } from './prepare-startup-leaves.mjs';
 import { prepareSharedLogin } from './prepare-shared-login.mjs';
 import { prepareStartupResolution } from './prepare-startup-resolution.mjs';
@@ -33,7 +33,7 @@ export async function checkRuntimeFiles(root) {
   await prepareSharedLogin(path.join(root, 'runtime'), true);
   await prepareStartupResolution(path.join(root, 'runtime'), true);
   for (const name of ['host.mjs', 'import.mjs', 'workbuddy-auth.mjs']) {
-    const built = await readFile(path.join(root, 'runtime', name)), source = await readFile(path.join(root, 'src/runtime', name));
+    const built = await readFile(path.join(root, 'runtime', name)), source = await readFile(path.join(root, 'tests/fixtures/legacy-runtime', name));
     if (!built.equals(source)) throw new Error('Stale runtime entry: ' + name + '; run build:runtime');
   }
   const licenses = await json('runtime/licenses.json');

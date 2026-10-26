@@ -20,6 +20,7 @@ export type UiErrorCode = 'DSH_UI_STYLE_FAILED' | 'DSH_UI_ADAPTER_FAILED' | 'DSH
 export type ClientMessage =
   | { type: 'ready' }
   | { type: 'retry' }
+  | { type: 'reconnect' }
   | { type: 'open-desktop' }
   | { type: 'install-desktop' }
   | { type: 'ui-error'; code: UiErrorCode }
@@ -28,7 +29,8 @@ export type ClientMessage =
 export type HostMessage =
   | { type: 'context'; context: EditorSnapshot }
   | { type: 'manual-reference'; reference: EditorReference }
-  | { type: 'reference-result'; requestId: string; value?: ResolvedFile; error?: string };
+  | { type: 'reference-result'; requestId: string; value?: ResolvedFile; error?: string }
+  | { type: 'connection-status'; state: 'reconnecting' | 'available' | 'unavailable' };
 
 export function referenceKey(reference: EditorReference): string {
   return reference.kind === 'selection'
@@ -40,7 +42,7 @@ export function referenceKey(reference: EditorReference): string {
 export function isClientMessage(value: unknown): value is ClientMessage {
   if (!value || typeof value !== 'object') return false;
   const message = value as Record<string, unknown>;
-  if (message.type === 'ready' || message.type === 'retry' || message.type === 'open-desktop' || message.type === 'install-desktop') return true;
+  if (message.type === 'ready' || message.type === 'retry' || message.type === 'reconnect' || message.type === 'open-desktop' || message.type === 'install-desktop') return true;
   if (message.type === 'ui-error') return ['DSH_UI_STYLE_FAILED', 'DSH_UI_ADAPTER_FAILED', 'DSH_UI_READY_TIMEOUT'].includes(message.code as string);
   if (message.type === 'read-reference') return typeof message.requestId === 'string' && typeof message.uri === 'string';
   return message.type === 'trace' && ['reference-read', 'reference-roundtrip', 'reference-serialize', 'send-feedback', 'send-feedback-timeout', 'workspace-bind'].includes(message.stage as string) &&

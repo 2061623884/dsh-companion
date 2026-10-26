@@ -6,7 +6,7 @@ test('source privacy rejects private/generated data and literal home paths while
     '.test-work/results.json', 'outputs/package.vsix', 'session.jsonl.zstd', 'local.sqlite', 'extension.zip']) {
     assert.notEqual(sourceViolation(filename, ''), null, filename);
   }
-  for (const filename of ['src/runtime/host.mjs', 'scripts/ci-tools.json', '.github/workflows/ci.yml', 'runtime/package-lock.json',
+  for (const filename of ['tests/fixtures/legacy-runtime/host.mjs', 'scripts/ci-tools.json', '.github/workflows/ci.yml', 'runtime/package-lock.json',
     'runtime/licenses.json', 'runtime/node-version.json', 'tests/fixtures/startup-leaf-exports.json', 'media/whale.svg', '.env.example']) {
     assert.equal(sourceViolation(filename, 'public synthetic fixture'), null, filename);
   }

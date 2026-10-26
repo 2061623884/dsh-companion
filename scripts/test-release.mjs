@@ -24,7 +24,7 @@ const execute = promisify(execFile), results = [];
 for (const version of new Set([minimum, vscodeVersion])) {
   const code = await downloadAndUnzipVSCode({ version, platform: 'win32-x64-archive', cachePath: path.join(root, '.test-work/vscode'),
     reporter: { report() {}, error(error) { console.error(error); } } });
-  const workspace = await prepareTestWorkspace(root), desktop = await desktopFixture(root);
+  const workspace = await prepareTestWorkspace(), desktop = await desktopFixture(root);
   const profile = path.join(workspace.directory, 'profile'), extensions = path.join(workspace.directory, 'extensions');
   const harness = path.join(workspace.directory, 'harness'), resultFile = path.join(workspace.directory, 'result.json');
   await mkdir(harness); await writeFile(path.join(harness, 'package.json'), JSON.stringify({ name: 'release-harness', publisher: 'synthetic',
@@ -41,10 +41,10 @@ for (const version of new Set([minimum, vscodeVersion])) {
   if (path.relative(path.dirname(code), cli).startsWith('..')) throw new Error('RELEASE_EDITOR_CLI_OUTSIDE_INSTALL');
   try {
     await execute(code, [cli, ...isolated, '--install-extension', archive, '--force'],
-      { windowsHide: true, timeout: 120000, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', DSH_HOME: desktop.home } });
+      { cwd: path.dirname(code), windowsHide: true, timeout: 120000, env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', DSH_HOME: desktop.home } });
     await execute(code, [...isolated, '--new-window', '--disable-workspace-trust', '--skip-welcome', '--skip-release-notes',
       '--remote-debugging-port=' + port, '--extensionDevelopmentPath=' + harness,
-      '--extensionTestsPath=' + path.join(root, 'tests/native-release.cjs'), workspace.workspace], { windowsHide: true, timeout: 150000,
+      '--extensionTestsPath=' + path.join(root, 'tests/native-release.cjs'), workspace.workspace], { cwd: path.dirname(code), windowsHide: true, timeout: 150000,
       env: { ...process.env, DSH_HOME: desktop.home, DSH_RELEASE_ROOT: root, DSH_RELEASE_EXTENSION_ID: metadata.id,
         DSH_RELEASE_EXTENSIONS: extensions, DSH_RELEASE_DEBUG_PORT: String(port), DSH_RELEASE_RESULT: resultFile,
         DSH_DESKTOP_ADDRESS: desktop.address, DSH_DESKTOP_NETWORK: desktop.network } });

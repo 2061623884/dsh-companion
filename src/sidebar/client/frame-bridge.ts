@@ -6,6 +6,17 @@ const frame = document.querySelector<HTMLIFrameElement>('iframe')!;
 const base = new URL(frame.src).origin;
 const loading = document.getElementById('dsh-companion-loading')!;
 const retry = document.getElementById('dsh-companion-retry') as HTMLButtonElement;
+const connectionNotice = document.getElementById('dsh-companion-connection')!;
+const connectionText = document.getElementById('dsh-companion-connection-text')!;
+const reconnect = document.getElementById('dsh-companion-reconnect') as HTMLButtonElement;
+const connectionMessages = {
+  reconnecting: '连接中断，正在重连；当前页面和草稿保留。请先核对刚才的发送，避免重复提交。',
+  available: '后台已可连接。若会话仍未恢复，请先复制草稿，再重新加载页面。',
+  unavailable: '暂时无法恢复连接；当前页面和草稿保留。可以重试连接；重新加载页面前请先复制草稿。',
+};
+reconnect.addEventListener('click', () => { reconnect.disabled = true; vscode.postMessage({ type: 'reconnect' }); });
+document.getElementById('dsh-companion-reload')!.addEventListener('click', () => vscode.postMessage({ type: 'retry' }));
+document.getElementById('dsh-companion-dismiss')!.addEventListener('click', () => { connectionNotice.hidden = true; });
 const errors: Record<UiErrorCode, string> = {
   DSH_UI_STYLE_FAILED: '界面样式加载失败，请重试。',
   DSH_UI_ADAPTER_FAILED: '聊天界面初始化失败，请重试；若持续失败，请检查插件与 DSH 的兼容性。',
@@ -64,6 +75,11 @@ window.addEventListener('message', event => {
   // VS Code replaces window.parent; its messages carry the webview's origin.
   if(event.origin !== window.origin) return;
   const message = data as HostMessage;
+  if(message.type === 'connection-status' && Object.hasOwn(connectionMessages, message.state)) {
+    connectionText.textContent = connectionMessages[message.state];
+    reconnect.disabled = message.state === 'reconnecting';
+    connectionNotice.hidden = false;
+  }
   if(message.type === 'context') post({ type: 'editor-context', context: message.context });
   if(message.type === 'manual-reference') post({ type: 'editor-reference', reference: message.reference });
   if(message.type === 'reference-result') post(message);

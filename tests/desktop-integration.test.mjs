@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { desktopFixture, desktopRpc } from './desktop-fixture.mjs';
 const require = createRequire(import.meta.url);
-const { RuntimeConnection } = require('../dist/test/runtime/connection');
+const { DesktopConnection } = require('../dist/test/desktop/connection');
 
 test('the real Desktop Host owns the shared settings and sessions and survives editor disconnect', { timeout: 60000 }, async () => {
   let fixture = await desktopFixture(process.cwd());
-  const connection = new RuntimeConnection({ desktopHome: fixture.home, assetsDirectory: 'dist' });
+  const connection = new DesktopConnection({ desktopHome: fixture.home, assetsDirectory: 'dist' });
   try {
     const base = await connection.start();
     assert.match(await (await fetch(base + '/?dsh-companion=1')).text(), /__dsh_companion\/bootstrap.js/);

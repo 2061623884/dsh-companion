@@ -1,12 +1,10 @@
 import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import os from 'node:os';
 
-/** Fresh synthetic multi-root workspace; never reuse a contributor's files.
- * @param {string} root
- */
-export async function prepareTestWorkspace(root) {
-  await mkdir(path.join(root, '.test-work'), { recursive: true });
-  const directory = await mkdtemp(path.join(root, '.test-work/native-fixtures-'));
+/** Synthetic editor data outside the repository's Node package scope. */
+export async function prepareTestWorkspace() {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'dsh-native-fixtures-'));
   for (const folder of ['a', 'b']) {
     await mkdir(path.join(directory, folder));
     await writeFile(path.join(directory, folder, 'main.py'), 'print("synthetic-' + folder + '")\n');

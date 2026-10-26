@@ -36,7 +36,7 @@ export async function desktopFixture(root, existingDirectory) {
   await writeFile(path.join(project, 'cordis.patch.yml'), '[]\n');
   }
   if (!process.env.LOCALAPPDATA) throw new Error('Desktop fixture requires Windows LOCALAPPDATA');
-  const installation = path.join(process.env.LOCALAPPDATA, 'Programs/DeepSeek Harness');
+  const installation = process.env.DSH_TEST_DESKTOP_INSTALLATION || path.join(process.env.LOCALAPPDATA, 'Programs/DeepSeek Harness');
   const runtime = path.join(installation, 'resources/app.asar/dsh');
   const executable = path.join(installation, 'DeepSeek Harness.exe');
   const network = path.join(directory, 'network.json');

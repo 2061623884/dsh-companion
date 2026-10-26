@@ -141,6 +141,26 @@ exports.run = async () => {
     for (const label of ['插件', '自动化任务', '设置']) {
       await evaluate(`document.querySelector('#dsh-companion-toolbar button[aria-label="${label}"]').click();true`);
       await delay(350);
+      if (label === '设置') {
+        const originalStyle = (await send('Runtime.evaluate', { expression: `document.getElementById('active-frame').contentDocument.querySelector('iframe').style.cssText`, returnByValue: true }, wrapperSession)).result.value;
+        result.settingsLayouts = [];
+        for (const width of [300, 420, 960]) {
+          await send('Runtime.evaluate', { expression: `(() => {const frame=document.getElementById('active-frame').contentDocument.querySelector('iframe'); frame.style.width='${width}px';frame.style.height='640px';frame.style.flex='none';})()` }, wrapperSession);
+          await delay(100);
+          const geometry = await evaluate(`(() => {
+            const panel = document.querySelector('[data-dsh-companion-settings]');
+            const rect = element => { const r=element.getBoundingClientRect(); return {top:r.top,left:r.left,width:r.width,height:r.height,bottom:r.bottom,right:r.right}; };
+            return { viewport:{width:innerWidth,height:innerHeight}, panel:rect(panel), children:[...panel.children].map(rect) };
+          })()`);
+          result.settingsLayouts.push(geometry);
+          assert.equal(geometry.viewport.width, width);
+          assert.ok(geometry.children[0].height <= 64, 'Settings title must not consume the content area: ' + JSON.stringify(geometry));
+          assert.ok(geometry.children[2].height <= 64, 'Settings close row must stay compact');
+          assert.ok(geometry.children[3].height >= geometry.panel.height * 0.6, 'Settings content must use the remaining panel height');
+          assert.ok(geometry.children.every(child => child.left >= geometry.panel.left - 1 && child.right <= geometry.panel.right + 1), 'Settings sections must fit inside the sidebar');
+        }
+        await send('Runtime.evaluate', { expression: `document.getElementById('active-frame').contentDocument.querySelector('iframe').style.cssText=${JSON.stringify(originalStyle)}` }, wrapperSession);
+      }
       await evaluate(`document.querySelector('#dsh-companion-toolbar button[aria-label="${label}"]').click();true`);
       await delay(350); assert.ok(await evaluate(`!!document.querySelector('[data-composer-input]')`));
     }

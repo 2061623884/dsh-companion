@@ -98,12 +98,12 @@ async function probe() {
 
 exports.run = async () => {
   const root = path.resolve(__dirname, '..'), directory = await fs.mkdtemp(path.join(root, '.test-work/navigation-'));
-  const { RuntimeClient } = require('../dist/test/runtime/client'), { RuntimeConnection } = require('../dist/test/runtime/connection');
+  const { RuntimeClient } = require('../dist/test/legacy-runtime/client'), { DesktopConnection } = require('../dist/test/desktop/connection');
   const { frameHtml } = require('../dist/test/sidebar/view'), { EditorContext } = require('../dist/test/context/editor-context');
   const source = path.join(directory, 'desktop'); await fs.mkdir(path.join(source, 'profiles/desktop'), { recursive: true });
   await fs.writeFile(path.join(source, 'profiles/desktop/cordis.patch.yml'), '[]\n');
   const runtime = path.join(root, 'runtime'), home = path.join(directory, 'home'), client = new RuntimeClient(runtime, home, source);
-  const connection = new RuntimeConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: directory, acquire: () => client.acquire() });
+  const connection = new DesktopConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: directory, acquire: () => client.acquire() });
   const editor = new EditorContext(), cases = [];
   let panel;
   try {

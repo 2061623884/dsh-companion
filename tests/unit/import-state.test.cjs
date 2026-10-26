@@ -3,7 +3,7 @@ const fs = require('node:fs/promises'), path = require('node:path'), os = requir
 const { syncBuiltinESMExports } = require('node:module');
 
 test('failed migration record replacement preserves the last valid record and existing data', async t => {
-  const { importDesktopData } = await import('../../src/runtime/import.mjs');
+  const { importDesktopData } = await import('../../tests/fixtures/legacy-runtime/import.mjs');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-migration-record-')), home = path.join(root, 'home');
   await fs.mkdir(home); const marker = path.join(home, 'migration.json');
   const original = JSON.stringify({ version: 1, historySessions: 0, skipped: [{ id: 'fixture-session', code: 'PENDING_OR_INTERRUPTED' }] });
@@ -25,7 +25,7 @@ test('failed migration record replacement preserves the last valid record and ex
 });
 
 test('corrupt migration records fail explicitly without initializing over the existing home', async () => {
-  const { importDesktopData } = await import('../../src/runtime/import.mjs');
+  const { importDesktopData } = await import('../../tests/fixtures/legacy-runtime/import.mjs');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-migration-corrupt-')), home = path.join(root, 'home');
   await fs.mkdir(home); await fs.writeFile(path.join(home, 'migration.json'), '{partial');
   await fs.writeFile(path.join(home, 'keep.txt'), 'owned-data');
@@ -35,7 +35,7 @@ test('corrupt migration records fail explicitly without initializing over the ex
 });
 
 test('cancelled migration cannot initialize a home or advance to commit', async () => {
-  const { importDesktopData } = await import('../../src/runtime/import.mjs');
+  const { importDesktopData } = await import('../../tests/fixtures/legacy-runtime/import.mjs');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-migration-cancel-')), home = path.join(root, 'home');
   const controller = new AbortController(), reason = new Error('fixture cancellation'); controller.abort(reason);
   await assert.rejects(importDesktopData(path.join(root, 'none'), home, controller.signal), error => error === reason);
@@ -43,7 +43,7 @@ test('cancelled migration cannot initialize a home or advance to commit', async 
 });
 
 test('cancellation during a retry preserves the old marker and removes its staged replacement', async t => {
-  const { importDesktopData } = await import('../../src/runtime/import.mjs');
+  const { importDesktopData } = await import('../../tests/fixtures/legacy-runtime/import.mjs');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-migration-mid-cancel-')), home = path.join(root, 'home');
   await fs.mkdir(home); const marker = path.join(home, 'migration.json');
   const original = JSON.stringify({ version: 1, skipped: [{ id: 'fixture', code: 'PENDING_OR_INTERRUPTED' }] });

@@ -2,7 +2,7 @@
   "name": "dsh-companion",
   "displayName": "DSH Companion",
   "description": "Use the DeepSeek Harness desktop runtime, login, settings and sessions from a VS Code sidebar.",
-  "version": "0.4.0-preview.1",
+  "version": "0.4.0-preview.4",
   "repository": {
     "type": "git",
     "url": "https://github.com/2061623884/dsh-companion.git"
@@ -79,6 +79,11 @@
       {
         "command": "dshCompanion.reference",
         "title": "DSH Companion: 引用当前文件或选区"
+      },
+      {
+        "command": "dshCompanion.checkUpdates",
+        "title": "DSH Companion: 检查桌面端更新",
+        "icon": "$(cloud-download)"
       }
     ],
     "menus": {
@@ -100,6 +105,11 @@
           "command": "dshCompanion.refresh",
           "when": "view == dshCompanion.chat",
           "group": "navigation"
+        },
+        {
+          "command": "dshCompanion.checkUpdates",
+          "when": "view == dshCompanion.chat",
+          "group": "navigation@20"
         }
       ]
     },
@@ -115,11 +125,13 @@
     }
   },
   "dependencies": {
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "semver": "^7.8.5"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.0.0",
+    "@types/semver": "^7.8.0",
     "@types/vscode": "1.106.0",
     "@types/yauzl": "3.4.0",
     "@vscode/test-electron": "3.1.0",

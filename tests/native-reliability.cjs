@@ -4,7 +4,7 @@ const { pathToFileURL } = require('node:url'), assert = require('node:assert/str
 const { prepareWorkBuddyProfile } = require('./workbuddy-profile-fixture.cjs');
 exports.run = async () => {
   const root = path.resolve(__dirname, '..'), work = path.join(root, '.test-work/native-reliability');
-  const { RuntimeClient } = require('../dist/test/runtime/client'), { RuntimeConnection } = require('../dist/test/runtime/connection');
+  const { RuntimeClient } = require('../dist/test/legacy-runtime/client'), { DesktopConnection } = require('../dist/test/desktop/connection');
   const { EditorContext } = require('../dist/test/context/editor-context'), { frameHtml } = require('../dist/test/sidebar/view');
   const directory = await fs.mkdtemp(work + '-'), home = path.join(directory, 'home'), source = path.join(directory, 'desktop');
   const desktopFixture = await prepareWorkBuddyProfile(source);
@@ -12,7 +12,7 @@ exports.run = async () => {
   process.env.NODE_OPTIONS = '--import=' + pathToFileURL(path.join(root, 'tests/workbuddy-network-fixture.mjs'));
   process.env.DSH_WORKBUDDY_TEST_NETWORK = requestsFile;
   const runtime = path.join(root, 'runtime'), client = new RuntimeClient(runtime, home, source);
-  const connection = new RuntimeConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: directory, acquire: () => client.acquire() });
+  const connection = new DesktopConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: directory, acquire: () => client.acquire() });
   const editor = new EditorContext(), result = { vscodeVersion: vscode.version, cases: [] };
   let panel, address;
   const http = require('node:http'), net = require('node:net'), sockets = new Set();

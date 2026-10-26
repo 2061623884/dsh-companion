@@ -1,0 +1,583 @@
+diff --git a/apps/desktop/README.i18n.yaml b/apps/desktop/README.i18n.yaml
+index 01b1154394780eeb454e2b2551150fef99b8e554..f45c3cfd2e57eeb119d783b2ab1d6a3055618aa3 100644
+--- a/apps/desktop/README.i18n.yaml
++++ b/apps/desktop/README.i18n.yaml
+@@ -21,8 +21,8 @@
+   en: 5f2d25a1d8472647
+   zh: 2acb5c5d7d1917e2
+ /deepseek-harness-desktop/closing-the-window-and-quitting:
+-  en: bb35a022c37955c9
+-  zh: ab2ef22d398d83a0
++  en: a1a0ada5eece4814
++  zh: 34ab7619adb0c168
+ /deepseek-harness-desktop/key-technical-decisions:
+   en: 3724c53da4f7647b
+   zh: 76ae549d43c99bb4
+diff --git a/apps/desktop/README.md b/apps/desktop/README.md
+index 1d5292c68b7d0955508a9eaf1b6ff8c16154986b..af7e8642ce5956162dbefe5d7f234402a28ca730 100644
+--- a/apps/desktop/README.md
++++ b/apps/desktop/README.md
+@@ -66,6 +66,10 @@ Command registration is optional after installing Desktop. Use **Manage dsh Comm
+
+ ## Closing the window and quitting
+
++Desktop accepts `--background` to start its usual Host without showing an already configured workspace. The Electron owner and Windows tray remain running. Repeated background launches leave the window hidden; an ordinary launch, tray open, or `dsh://open` shows the same workspace and Host. An ordinary launch received before application or Host readiness is retained until startup completes. Welcome onboarding, necessary policy authentication, mandatory updates, and fatal-error recovery remain visible; `--updated` takes precedence over background startup.
++
++Windows packages advertise this startup capability in `resources/dsh-companion-capabilities.json` beside the installed executable's resources, with `schema: 1` and `backgroundStart: true`. Launchers must check this capability before passing the fixed `--background` argument; a missing or unsupported declaration requires the ordinary explicit open flow. This declaration does not create an independently owned Host or change session storage, authentication, shutdown, or update ownership.
++
+ Closing the main window (macOS close button and ⌘W; Windows ×, Alt+F4, and the taskbar Close window command) hides it; Windows asks for acknowledgement before the first hide. The page and the Host keep running, tasks continue, and the next show presents the same document with its session, drafts, and scroll position; a fullscreen macOS window leaves fullscreen before hiding. The window returns through the Dock icon, a second launch, or `dsh://open` on macOS, and through the tray on Windows. Minimize is unchanged. Closing the welcome window before the workspace opens quits on Windows and, on macOS, keeps the application in the Dock without a window.
+
+ Windows keeps a tray icon for the whole run. Its tooltip is the product name, a single click shows and focuses the window, and the context menu offers Open DeepSeek Harness and Quit DeepSeek Harness in the shell locale. Before the first hide, the shared update-dialog overlay explains that running tasks continue and the window can be reopened from the system tray. Confirm hides the window and writes `background-close-confirmed` under Electron userData; Escape, dismissal, or dialog failure keeps the window visible and does not record acknowledgement. Repeated close requests focus the existing shell dialog. In-place updates retain the marker and uninstall removes it. The old `background-notice-shown` marker does not suppress this confirmation. Closing the window sends no system notification. The tray bitmaps are `resources/tray-windows.ico`, rendered from `resources/icon-windows.svg` at 16, 20, 24, 32, 40, 48, and 64 pixels by `pnpm run render:tray-icon`, and packaged as `resources/tray.ico`. macOS ships no menu bar icon.
+diff --git a/apps/desktop/README.zh.md b/apps/desktop/README.zh.md
+index c2078e9d30e4168c90c5bc517c94748b3042c15f..e5ef33899165865182997b28b49170763e2f61e8 100644
+--- a/apps/desktop/README.zh.md
++++ b/apps/desktop/README.zh.md
+@@ -66,6 +66,10 @@ macOS 安装会创建 `/usr/local/bin/dsh`；目录权限需要时，系统会
+
+ ## 关闭窗口与退出
+
++Desktop 接受 `--background` 参数，启动原有 Host，并保持已配置好的工作区窗口隐藏。Electron 所有者和 Windows 托盘继续运行。重复的后台启动不会显示窗口；普通启动、托盘打开或 `dsh://open` 会展示同一个工作区和 Host。在应用或 Host 就绪之前收到的普通打开请求会保留，直到启动完成。首次欢迎、必要的策略认证、强制更新和致命错误恢复仍然可见；`--updated` 的优先级高于后台启动。
++
++Windows 安装包通过已安装程序的 `resources/dsh-companion-capabilities.json` 声明此启动能力，内容包含 `schema: 1` 和 `backgroundStart: true`。启动方必须先检查此能力，再传入固定的 `--background` 参数；缺少声明或声明不受支持时，使用原有的显式打开流程。此声明不会创建独立所有者的 Host，也不改变会话存储、认证、退出或升级的归属。
++
+ 关闭主窗口（macOS 的关闭按钮和 ⌘W；Windows 的 ×、Alt+F4 和任务栏"关闭窗口"）会隐藏窗口；Windows 首次隐藏前需要确认。页面和 Host 继续运行，任务不受影响，下次显示时仍是原来的文档，会话、草稿和滚动位置都保留；macOS 全屏窗口先退出全屏再隐藏。macOS 通过 Dock 图标、再次启动或 `dsh://open` 找回窗口，Windows 通过托盘找回。最小化行为不变。进入工作区前关闭欢迎窗口，Windows 上走退出流程，macOS 上应用留在 Dock 中且没有窗口。
+
+ Windows 在整个运行期间常驻托盘图标。悬停提示为产品名，单击显示并聚焦窗口，右键菜单提供壳语言下的"打开 DeepSeek Harness"和"退出 DeepSeek Harness"。首次隐藏前复用更新弹窗，显示“正在运行的任务不会中断，可在系统托盘中重新打开窗口”和“确认”按钮。确认后隐藏窗口，并在 Electron userData 下写入 `background-close-confirmed`；Esc、关闭弹窗或加载失败均保持主窗口可见，不记录确认。重复关闭请求会聚焦已有壳弹窗。覆盖更新保留标记，卸载删除标记。旧的 `background-notice-shown` 标记不会跳过此确认。关闭窗口不发送系统通知。托盘位图是 `resources/tray-windows.ico`，由 `pnpm run render:tray-icon` 从 `resources/icon-windows.svg` 按 16、20、24、32、40、48、64 像素分别渲染，打包为 `resources/tray.ico`。macOS 不提供菜单栏图标。
+diff --git a/apps/desktop/electron-builder.config.d.mts b/apps/desktop/electron-builder.config.d.mts
+index 2973a6eaccbe3dff5fe807b4ea9bb4f6cad46352..989ede4af147465c5d6c233a6a7c6451054b333c 100644
+--- a/apps/desktop/electron-builder.config.d.mts
++++ b/apps/desktop/electron-builder.config.d.mts
+@@ -19,7 +19,7 @@ export interface DesktopElectronBuilderConfig {
+   readonly extraResources: readonly [
+     { readonly from: string, readonly to: 'runtime' },
+     { readonly from: string, readonly to: 'icon.png' },
+-    ...{ readonly from: string, readonly to: 'tray.ico' }[],
++    ...{ readonly from: string, readonly to: 'tray.ico' | 'dsh-companion-capabilities.json' }[],
+   ]
+   readonly mac: {
+     readonly extendInfo: {
+diff --git a/apps/desktop/resources/dsh-companion-capabilities.json b/apps/desktop/resources/dsh-companion-capabilities.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..21ae897745a9b06e1d3dc4ac1a37de1ae4a06b6e
+--- /dev/null
++++ b/apps/desktop/resources/dsh-companion-capabilities.json
+@@ -0,0 +1,4 @@
++{
++  "schema": 1,
++  "backgroundStart": true
++}
+diff --git a/apps/desktop/scripts/electron-builder-config.mjs b/apps/desktop/scripts/electron-builder-config.mjs
+index 1acb81325396e33a20f1248a3ef2caeb5c73735e..fc77729f4a5fefb73f23cfeb8a928a72aba8b1b3 100644
+--- a/apps/desktop/scripts/electron-builder-config.mjs
++++ b/apps/desktop/scripts/electron-builder-config.mjs
+@@ -158,7 +158,10 @@ export function createElectronBuilderConfig(
+       { from: buildPaths.runtime, to: 'runtime' },
+       { from: fileURLToPath(new URL('../resources/icon-windows.png', import.meta.url)), to: 'icon.png' },
+       // Windows tray bitmaps; macOS keeps the Dock and ships no menu bar icon.
+-      ...(packagesWindows ? [{ from: fileURLToPath(new URL('../resources/tray-windows.ico', import.meta.url)), to: 'tray.ico' }] : []),
++      ...(packagesWindows ? [
++        { from: fileURLToPath(new URL('../resources/tray-windows.ico', import.meta.url)), to: 'tray.ico' },
++        { from: fileURLToPath(new URL('../resources/dsh-companion-capabilities.json', import.meta.url)), to: 'dsh-companion-capabilities.json' },
++      ] : []),
+     ],
+     mac: {
+       icon: fileURLToPath(new URL('../resources/icon-macos.png', import.meta.url)),
+diff --git a/apps/desktop/src/launch-visibility.ts b/apps/desktop/src/launch-visibility.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..e443a503bbca5170096e4f2a96511164f8790841
+--- /dev/null
++++ b/apps/desktop/src/launch-visibility.ts
+@@ -0,0 +1,32 @@
++/** Window presentation intent retained while the Desktop Host starts. */
++
++/**
++ * @param argv - Electron launch arguments, including the executable.
++ * @returns Whether this launch requests a hidden workspace; installer restarts still present it.
++ */
++export function requestsBackground(argv: readonly string[]): boolean {
++  return argv.includes('--background') && !argv.includes('--updated')
++}
++
++/** One application launch owns pending foreground intent and the eventual window callback. */
++export class DesktopLaunchVisibility {
++  private foreground: boolean
++  private focusOwner: (() => void) | undefined
++
++  /** @param argv - Initial Electron launch arguments. */
++  constructor(argv: readonly string[]) {
++    this.foreground = !requestsBackground(argv)
++  }
++
++  /** Whether normal workspace startup may show its window. */
++  get showInitialWorkspace(): boolean { return this.foreground }
++
++  /** Remember an explicit open, including before window creation or Host readiness. */
++  requestForeground(): void {
++    this.foreground = true
++    this.focusOwner?.()
++  }
++
++  /** @param focusOwner - Present the existing window when available; startup consumes pending intent. */
++  setFocusOwner(focusOwner: () => void): void { this.focusOwner = focusOwner }
++}
+diff --git a/apps/desktop/src/main.ts b/apps/desktop/src/main.ts
+index fb938dec84a03530c6bdfe1a277b696e671df546..2496abf53d487428f49b939f82e1f791f87e64f1 100644
+--- a/apps/desktop/src/main.ts
++++ b/apps/desktop/src/main.ts
+@@ -63,8 +63,8 @@ import { DesktopUpdateOverlays } from './update-overlay.ts'
+ import { DesktopQuitConfirmation } from './quit-confirmation.ts'
+ import { DesktopTray } from './tray.ts'
+ import { DesktopBackgroundNotice } from './background-notice.ts'
++import { DesktopLaunchVisibility } from './launch-visibility.ts'
+
+-let focusPrimaryWindow = (): void => {}
+ let stopForRecovery = async (): Promise<void> => {}
+ let shuttingDown = false
+ /**
+@@ -316,7 +316,7 @@ function createWindow(preload: string, show = false, primary = false): BrowserWi
+   return window
+ }
+
+-async function main(): Promise<void> {
++async function main(launchVisibility: DesktopLaunchVisibility): Promise<void> {
+   const desktopSettings = readDesktopSettings(app.getPath('userData'))
+   void pruneCrashReports(app.getPath('logs'))
+   const journalDirectory = process.env.DSH_DESKTOP_UPDATE_JOURNAL_DIR
+@@ -493,7 +493,7 @@ async function main(): Promise<void> {
+           }
+           if ((attempt?.phase === 'failed' || attempt?.phase === 'expired') && returnedAttempt !== attempt.id) {
+             returnedAttempt = attempt.id
+-            focusPrimaryWindow()
++            launchVisibility.requestForeground()
+           }
+           if (state.status === 'credential-stored' && attempt?.phase === 'succeeded' && welcomeWindow !== undefined) void enterWorkspace({ activate: false }).catch(() => undefined)
+           if (previousAccountStatus === 'credential-stored' && state.status === 'signed-out') {
+@@ -911,6 +911,7 @@ async function main(): Promise<void> {
+   }
+   const queuePolicyAuthentication = (): void => {
+     if (!desktopSettings.updates.allowTestAuthPopupWindow) return
++    launchVisibility.requestForeground()
+     if (authenticationOperation !== undefined) {
+       policyAuth?.focus(); updateDialog.focus()
+       return
+@@ -1023,7 +1024,7 @@ async function main(): Promise<void> {
+     // The tray is the way back to a hidden window; without it, relaunching the application still focuses it.
+     try {
+       tray = new DesktopTray({ iconPath: trayIconPath, locale: currentDesktopLocale,
+-        open: () => { focusPrimaryWindow() }, quit: () => { app.quit() } })
++        open: () => { launchVisibility.requestForeground() }, quit: () => { app.quit() } })
+     } catch (error) { console.warn('desktop tray: unavailable', error) }
+   }
+   const backgroundNotice = process.platform === 'win32'
+@@ -1147,13 +1148,16 @@ async function main(): Promise<void> {
+     })
+     return window
+   }
+-  const enterWorkspace = async ({ activate = true }: { activate?: boolean } = {}): Promise<void> => {
++  const enterWorkspace = async ({ activate = true, initial = false }: { activate?: boolean; initial?: boolean } = {}): Promise<void> => {
+     if (quitting) return
+     const window = mainWindow ?? createMainWindow()
+     await navigateMain(applicationUrl)
+     if (isQuitting() || recovery.active || window.isDestroyed()) return
+-    if (activate) window.show()
+-    else window.showInactive()
++    const show = !initial || launchVisibility.showInitialWorkspace
++    if (show) {
++      if (activate) window.show()
++      else window.showInactive()
++    }
+     enteredWorkspace = true
+     if (welcomeWindow !== undefined) {
+       welcomeWindow.close()
+@@ -1165,7 +1169,7 @@ async function main(): Promise<void> {
+       window.moveTop()
+       window.focus()
+     }
+-    if (activate && development && process.env.DSH_DESKTOP_OPEN_DEVTOOLS !== '0') {
++    if (show && activate && development && process.env.DSH_DESKTOP_OPEN_DEVTOOLS !== '0') {
+       window.webContents.openDevTools({ mode: 'detach' })
+     }
+   }
+@@ -1243,10 +1247,10 @@ async function main(): Promise<void> {
+       raiseAfterUpdate = false
+       await showWelcome()
+     } else {
+-      await enterWorkspace()
++      await enterWorkspace({ initial: true })
+     }
+   }
+-  focusPrimaryWindow = () => {
++  const focusPrimaryWindow = () => {
+     if (quitting) return
+     if (isMandatory()) { mandatoryUI?.focus(); return }
+     const window = welcomeWindow ?? mainWindow
+@@ -1261,15 +1265,16 @@ async function main(): Promise<void> {
+     window.show()
+     window.focus()
+   }
++  launchVisibility.setFocusOwner(focusPrimaryWindow)
+
+   if (app.isPackaged || process.env.DSH_DESKTOP_DEV_APP === '1') app.setAsDefaultProtocolClient('dsh')
+   app.on('open-url', (event, url) => {
+     event.preventDefault()
+-    if (url === 'dsh://open' || url === 'dsh://open/') focusPrimaryWindow()
++    if (url === 'dsh://open' || url === 'dsh://open/') launchVisibility.requestForeground()
+   })
+
+   app.on('activate', (_event, hasVisibleWindows) => {
+-    if (!hasVisibleWindows) focusPrimaryWindow()
++    if (!hasVisibleWindows) launchVisibility.requestForeground()
+   })
+   app.on('window-all-closed', () => {
+     if (process.platform !== 'darwin') app.quit()
+@@ -1344,6 +1349,7 @@ async function main(): Promise<void> {
+         if (!wasBlocking) updateDialog.cancel()
+       }
+       mandatoryUI?.sync()
++      if (state.blocking && !wasBlocking && !launchVisibility.showInitialWorkspace) launchVisibility.requestForeground()
+       if (state.blocking && !wasBlocking) void updateSchedule.check(false, true).catch((error: unknown) => { console.error(error) })
+       wasBlocking = state.blocking
+     }, policyAuth?.request, () => desktopClientMetadata(locale.id))
+@@ -1365,23 +1371,27 @@ async function main(): Promise<void> {
+   // Window lifecycle callbacks run while backend startup is pending.
+   if (isQuitting()) return
+   const window = currentMainWindow()
+-  if (window !== undefined && development && process.env.DSH_DESKTOP_OPEN_DEVTOOLS !== '0') {
++  if (window !== undefined && launchVisibility.showInitialWorkspace && development && process.env.DSH_DESKTOP_OPEN_DEVTOOLS !== '0') {
+     window.webContents.openDevTools({ mode: 'detach' })
+   }
+   publishUpdate(updateState)
+ }
+
+-const ownsDesktopInstance = claimDesktopSingleInstance(app, () => { focusPrimaryWindow() })
++function launchDesktop(): void {
++  const visibility = new DesktopLaunchVisibility(process.argv)
++  if (!claimDesktopSingleInstance(app, () => { visibility.requestForeground() })) return
++  void app.whenReady().then(() => main(visibility)).catch(async (error: unknown) => {
++    const message = error instanceof Error ? error.message : String(error)
++    console.error(error)
++    const diagnosticFile = process.env.DSH_DESKTOP_DIAGNOSTIC_FILE
++    if (diagnosticFile !== undefined) {
++      await writeFile(diagnosticFile, `${error instanceof Error ? error.stack ?? message : message}\n`).catch(() => undefined)
++    }
++    reportFatal(error, 'main')
++  }).catch((error: unknown) => {
++    console.error(error)
++    app.exit(1)
++  })
++}
+
+-if (ownsDesktopInstance) void app.whenReady().then(main).catch(async (error: unknown) => {
+-  const message = error instanceof Error ? error.message : String(error)
+-  console.error(error)
+-  const diagnosticFile = process.env.DSH_DESKTOP_DIAGNOSTIC_FILE
+-  if (diagnosticFile !== undefined) {
+-    await writeFile(diagnosticFile, `${error instanceof Error ? error.stack ?? message : message}\n`).catch(() => undefined)
+-  }
+-  reportFatal(error, 'main')
+-}).catch((error: unknown) => {
+-  console.error(error)
+-  app.exit(1)
+-})
++launchDesktop()
+diff --git a/apps/desktop/src/single-instance.ts b/apps/desktop/src/single-instance.ts
+index 7911b46c5bca48d18c695a0952a41f092442c6b8..f6342a2b9c6579cfd217ae2940a87b538d4a43f1 100644
+--- a/apps/desktop/src/single-instance.ts
++++ b/apps/desktop/src/single-instance.ts
+@@ -1,14 +1,16 @@
+ /** Electron single-instance ownership before any Desktop profile lifecycle begins. */
+
++import { requestsBackground } from './launch-visibility.ts'
++
+ /** Minimal Electron application operations needed for instance ownership. */
+ export interface DesktopSingleInstanceApplication {
+   requestSingleInstanceLock(): boolean
+   quit(): void
+-  on(event: 'second-instance', listener: () => void): unknown
++  on(event: 'second-instance', listener: (event: unknown, argv: string[]) => void): unknown
+ }
+
+ /**
+- * Claim the process-lifetime Desktop lock and route later launches to the owner.
++ * Claim the process-lifetime Desktop lock; only foreground launches present the owner.
+  * @param application - Electron application singleton.
+  * @param focusOwner - focus or recreate the primary window after a later launch.
+  * @returns true only in the process that may access the Desktop profile.
+@@ -21,6 +23,8 @@ export function claimDesktopSingleInstance(
+     application.quit()
+     return false
+   }
+-  application.on('second-instance', focusOwner)
++  application.on('second-instance', (_event, argv) => {
++    if (!requestsBackground(argv)) focusOwner()
++  })
+   return true
+ }
+diff --git a/apps/desktop/tests/background-capabilities.spec.ts b/apps/desktop/tests/background-capabilities.spec.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..545462e9527a5fe2d941d23e8a7310191836576a
+--- /dev/null
++++ b/apps/desktop/tests/background-capabilities.spec.ts
+@@ -0,0 +1,19 @@
++import { readFile } from 'node:fs/promises'
++import { expect, it } from 'vitest'
++import { createElectronBuilderConfig } from '../scripts/electron-builder-config.mjs'
++
++it.each(['win32', 'darwin'] as const)('declares background-start capability only in Windows package resources (%s)', async (platform) => {
++  const config = createElectronBuilderConfig({
++    DSH_DESKTOP_APP_ID: 'com.example.background-start',
++    DSH_DESKTOP_UNSIGNED: '1',
++    DSH_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN: 'https://policy.example.com',
++    DSH_DESKTOP_MANDATORY_UPDATE_CONFIG: JSON.stringify({ allowedAuthOrigins: ['https://login.example.com'] }),
++  }, platform, platform === 'win32' ? 'x64' : 'arm64')
++  const resource = config.extraResources.find(entry => entry.to === 'dsh-companion-capabilities.json')
++  if (platform === 'darwin') {
++    expect(resource).toBeUndefined()
++    return
++  }
++  expect(resource).toBeDefined()
++  expect(JSON.parse(await readFile(resource!.from, 'utf8'))).toEqual({ schema: 1, backgroundStart: true })
++})
+diff --git a/apps/desktop/tests/expected/background-launch.json b/apps/desktop/tests/expected/background-launch.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..b27cd7b256b97ae32221bc676bbe9a86144bbc70
+--- /dev/null
++++ b/apps/desktop/tests/expected/background-launch.json
+@@ -0,0 +1,29 @@
++[
++  {
++    "phase": "background ready",
++    "hostInstances": 1,
++    "hostStartCalls": 1,
++    "hostStopCalls": 0,
++    "workspaceShowCalls": 0,
++    "workspaceInactiveShowCalls": 0,
++    "workspaceFocusCalls": 0
++  },
++  {
++    "phase": "repeated background launch",
++    "hostInstances": 1,
++    "hostStartCalls": 1,
++    "hostStopCalls": 0,
++    "workspaceShowCalls": 0,
++    "workspaceInactiveShowCalls": 0,
++    "workspaceFocusCalls": 0
++  },
++  {
++    "phase": "explicit open",
++    "hostInstances": 1,
++    "hostStartCalls": 1,
++    "hostStopCalls": 0,
++    "workspaceShowCalls": 1,
++    "workspaceInactiveShowCalls": 0,
++    "workspaceFocusCalls": 1
++  }
++]
+diff --git a/apps/desktop/tests/main-startup.spec.ts b/apps/desktop/tests/main-startup.spec.ts
+index b2d925af6c4c516481a6a482b01624e1b4012011..ce1eda4841ef37cb0b90c62a2933b66bc895cbee 100644
+--- a/apps/desktop/tests/main-startup.spec.ts
++++ b/apps/desktop/tests/main-startup.spec.ts
+@@ -93,6 +93,7 @@ const harness = await vi.hoisted(async () => {
+     })
+     readonly shown = deferred()
+     readonly show = vi.fn(() => { this.shown.resolve() })
++    readonly showInactive = vi.fn()
+     readonly hide = vi.fn()
+     readonly focus = vi.fn()
+     readonly moveTop = vi.fn()
+@@ -1208,8 +1209,85 @@ describe('desktop main startup', () => {
+     return harness.hosts[0]!
+   }
+
++  it('starts one Host in the background and reveals the same workspace only on an explicit open', async () => {
++    vi.stubGlobal('process', { ...process, argv: ['desktop', '--background'] })
++    const host = await readyWorkspace()
++    const window = harness.windows[0]!
++    const presentation = (phase: string) => ({
++      phase, hostInstances: harness.hosts.length, hostStartCalls: host.start.mock.calls.length,
++      hostStopCalls: host.stop.mock.calls.length, workspaceShowCalls: window.show.mock.calls.length,
++      workspaceInactiveShowCalls: window.showInactive.mock.calls.length, workspaceFocusCalls: window.focus.mock.calls.length,
++    })
++    const observed = [presentation('background ready')]
++    expect(harness.hosts).toHaveLength(1)
++    expect(harness.trays).toHaveLength(1)
++    expect(window.show).not.toHaveBeenCalled()
++    expect(window.showInactive).not.toHaveBeenCalled()
++    harness.app.emit('second-instance', {}, ['desktop', '--background'])
++    observed.push(presentation('repeated background launch'))
++    expect(window.show).not.toHaveBeenCalled()
++    harness.app.emit('second-instance', {}, ['desktop'])
++    observed.push(presentation('explicit open'))
++    expect(window.show).toHaveBeenCalledOnce()
++    expect(window.focus).toHaveBeenCalledOnce()
++    expect(harness.hosts).toEqual([host])
++    expect(host.start).toHaveBeenCalledOnce()
++    expect(host.stop).not.toHaveBeenCalled()
++    await expect(JSON.stringify(observed, null, 2) + '\n').toMatchFileSnapshot('./expected/background-launch.json')
++  })
++
++  it.each(['before-ready', 'preparing', 'host-starting'] as const)('retains an explicit open during background startup (%s)', async (phase) => {
++    vi.stubGlobal('process', { ...process, argv: ['desktop', '--background'] })
++    const ready = Promise.withResolvers<void>()
++    if (phase === 'before-ready') vi.spyOn(harness.app, 'whenReady').mockReturnValue(ready.promise)
++    await import('../src/main.ts')
++    if (phase === 'before-ready') harness.app.emit('second-instance', {}, ['desktop'])
++    ready.resolve()
++    await harness.preparing.promise
++    if (phase === 'preparing') harness.app.emit('second-instance', {}, ['desktop'])
++    harness.prepared.resolve()
++    await harness.hostStarted.promise
++    if (phase === 'host-starting') harness.app.emit('second-instance', {}, ['desktop'])
++    harness.hosts[0]!.ready.resolve()
++    await Promise.resolve(invoke(DESKTOP_IPC.boot))
++    expect(harness.windows[0]!.show).toHaveBeenCalledOnce()
++    expect(harness.hosts).toHaveLength(1)
++  })
++
++  it('presents a mandatory update that arrives after background startup', async () => {
++    vi.stubGlobal('process', { ...process, argv: ['desktop', '--background'] })
++    harness.embeddedPolicy = { origin: 'https://policy.example.com', allowedPageOrigins: ['https://downloads.example.com'] }
++    const policy = Promise.withResolvers<Response>()
++    vi.stubGlobal('fetch', vi.fn(() => policy.promise))
++    const host = await readyWorkspace()
++    const window = harness.windows[0]!
++    expect(window.show).not.toHaveBeenCalled()
++    policy.resolve(Response.json({ code: 40005, data: {
++      show_content: { title: 'Update required', detail: 'Please update' }, desktop_app_link: 'https://downloads.example.com/',
++    } }))
++    await harness.policyBlocked.promise
++    expect(window.show).toHaveBeenCalledOnce()
++    expect(window.focus).toHaveBeenCalledOnce()
++    expect(host.stop).not.toHaveBeenCalled()
++  })
++
++  it('reports a background Host startup failure through the ordinary recovery dialog', async () => {
++    vi.stubGlobal('process', { ...process, argv: ['desktop', '--background'] })
++    await import('../src/main.ts')
++    await harness.preparing.promise
++    harness.prepared.resolve()
++    await harness.hostStarted.promise
++    const host = harness.hosts[0]!
++    host.exited.resolve()
++    host.ready.reject(new Error('synthetic background startup failure'))
++    await harness.dialogShown.promise
++    expect(harness.dialog.showMessageBox).toHaveBeenCalledWith(expect.objectContaining({ title: en.startupFailed }))
++    expect(harness.hosts).toHaveLength(1)
++  })
++
+   it.each([
+     ['win32', ['--updated'], true],
++    ['win32', ['--background', '--updated'], true],
+     ['win32', [], false],
+     ['darwin', ['--updated'], false],
+     ['linux', ['--updated'], false],
+@@ -1231,7 +1309,7 @@ describe('desktop main startup', () => {
+       expect(window.show.mock.invocationCallOrder[0]).toBeLessThan(window.moveTop.mock.invocationCallOrder[0]!)
+     }
+     window.destroy()
+-    harness.app.emit('second-instance')
++    harness.app.emit('second-instance', {}, ['desktop'])
+     const replacement = harness.windows[1]!
+     await replacement.shown.promise
+     expect(replacement.show).toHaveBeenCalledOnce()
+@@ -1272,7 +1350,7 @@ describe('desktop main startup', () => {
+     expect(harness.dialog.showMessageBox).not.toHaveBeenCalled()
+     expect(window.hide).toHaveBeenCalledOnce()
+     await host.stopping.promise
+-    harness.app.emit('second-instance')
++    harness.app.emit('second-instance', {}, ['desktop'])
+     expect(window.show).not.toHaveBeenCalled()
+     expect(window.focus).not.toHaveBeenCalled()
+     host.exited.resolve()
+@@ -1296,7 +1374,7 @@ describe('desktop main startup', () => {
+     harness.trays[0]!.emit('click')
+     expect(window.show).toHaveBeenCalledOnce()
+     expect(window.focus).toHaveBeenCalled()
+-    harness.app.emit('second-instance')
++    harness.app.emit('second-instance', {}, ['desktop'])
+     expect(window.show).toHaveBeenCalledTimes(2)
+     // Locale changes relabel the tray together with the application menu.
+     const relabels = harness.trays[0]!.setContextMenu.mock.calls.length
+diff --git a/apps/desktop/tests/single-instance.spec.ts b/apps/desktop/tests/single-instance.spec.ts
+index 220f0d5a30e5f362f6f936d079820326d79f491f..6597f37a8044915fee9cba5db5ae418f73092c0c 100644
+--- a/apps/desktop/tests/single-instance.spec.ts
++++ b/apps/desktop/tests/single-instance.spec.ts
+@@ -17,16 +17,33 @@ describe('desktop single-instance ownership', () => {
+   })
+
+   it('routes a later launch to the primary process', () => {
+-    let secondInstance: (() => void) | undefined
++    let secondInstance: ((event: unknown, argv: string[]) => void) | undefined
+     const focus = vi.fn()
+     const application = {
+       requestSingleInstanceLock: () => true,
+       quit: vi.fn(),
+-      on: vi.fn((_event: 'second-instance', listener: () => void) => { secondInstance = listener }),
++      on: vi.fn((_event: 'second-instance', listener: (event: unknown, argv: string[]) => void) => { secondInstance = listener }),
+     } satisfies DesktopSingleInstanceApplication
+
+     expect(claimDesktopSingleInstance(application, focus)).toBe(true)
+-    secondInstance?.()
++    secondInstance?.({}, ['desktop'])
++    expect(focus).toHaveBeenCalledOnce()
++  })
++
++  it('keeps the owner hidden for repeated background launches', () => {
++    let secondInstance: ((event: unknown, argv: string[]) => void) | undefined
++    const focus = vi.fn()
++    const application = {
++      requestSingleInstanceLock: () => true,
++      quit: vi.fn(),
++      on: vi.fn((_event: 'second-instance', listener: (event: unknown, argv: string[]) => void) => { secondInstance = listener }),
++    } satisfies DesktopSingleInstanceApplication
++
++    expect(claimDesktopSingleInstance(application, focus)).toBe(true)
++    secondInstance?.({}, ['desktop', '--background'])
++    secondInstance?.({}, ['desktop', '--background'])
++    expect(focus).not.toHaveBeenCalled()
++    secondInstance?.({}, ['desktop'])
+     expect(focus).toHaveBeenCalledOnce()
+   })
+ })
+diff --git a/apps/desktop/tests/welcome-startup.spec.ts b/apps/desktop/tests/welcome-startup.spec.ts
+index 7915248243e408841a829b4f887face59d7bf419..2143b470b3b4c30eb56caf6e6e72f26b95e4d23a 100644
+--- a/apps/desktop/tests/welcome-startup.spec.ts
++++ b/apps/desktop/tests/welcome-startup.spec.ts
+@@ -172,14 +172,14 @@ afterEach(() => {
+   vi.restoreAllMocks()
+ })
+
+-it.each([false, true])('starts welcome onboarding without carrying update focus into login or skip (Windows update=%s)', async (updated) => {
++it.each([{ args: [] }, { args: ['--updated'] }, { args: ['--background'] }])('starts welcome onboarding without carrying launch focus into login or skip ($args)', async ({ args }) => {
+   vi.resetModules()
+   vi.clearAllMocks()
+   state.preference = 'zh'
+   state.hasApiKey = false
+   state.operations = undefined
+   state.accountState.mockResolvedValue({ status: 'signed-out', attempt: null, links: { usageUrl: '', topUpUrl: '' } })
+-  if (updated) vi.stubGlobal('process', { ...process, platform: 'win32', argv: ['desktop', '--updated'] })
++  vi.stubGlobal('process', { ...process, platform: 'win32', argv: ['desktop', ...args] })
+   vi.useFakeTimers()
+   vi.stubEnv('DSH_CLIENT_VERSION', '1.2.3')
+   vi.stubEnv('DSH_DESKTOP_DEV_PROJECT_DIR', '/development-profile')
+@@ -196,17 +196,17 @@ it.each([false, true])('starts welcome onboarding without carrying update focus
+   state.beforeRead.mockReturnValueOnce(reading.promise)
+   state.beforeWelcome.mockReturnValueOnce(loading.promise)
+   const activate = () => {
+-    state.appListeners.get('second-instance')!()
++    state.appListeners.get('second-instance')!({}, ['desktop'])
+     state.appListeners.get('open-url')!({ preventDefault: vi.fn() }, 'dsh://open')
+   }
+   await import('../src/main.ts')
+   await vi.waitFor(() => { expect(state.beforeRead).toHaveBeenCalledOnce() })
+   try {
+-    activate()
++    if (!args.includes('--background')) activate()
+     expect(state.showWorkspace).not.toHaveBeenCalled()
+     reading.resolve(undefined)
+     await vi.waitFor(() => { expect(state.beforeWelcome).toHaveBeenCalledOnce() })
+-    activate()
++    if (!args.includes('--background')) activate()
+     expect(state.showWorkspace).not.toHaveBeenCalled()
+   } finally {
+     reading.resolve(undefined)

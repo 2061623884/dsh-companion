@@ -42,7 +42,7 @@ async function host({ pending = false, stalledBoot = false, stalledShutdown = fa
       for (const [key, value] of Object.entries(values[name])) this.setExport(key, value);
     }, { context });
   }
-  const source = new vm.SourceTextModule(await readFile('src/runtime/host.mjs', 'utf8'), { context,
+  const source = new vm.SourceTextModule(await readFile('tests/fixtures/legacy-runtime/host.mjs', 'utf8'), { context,
     initializeImportMeta(meta) { meta.dirname = path.resolve('runtime'); },
     async importModuleDynamically(name) { const module = dependency(name); await module.link(() => {}); await module.evaluate(); return module; } });
   await source.link(dependency); await source.evaluate();

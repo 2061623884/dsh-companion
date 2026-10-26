@@ -2,8 +2,8 @@ const { test } = require('node:test'), assert = require('node:assert/strict');
 const fs = require('node:fs/promises'), path = require('node:path'), os = require('node:os');
 const { execFile } = require('node:child_process'), { promisify } = require('node:util'), { createHash } = require('node:crypto');
 const net = require('node:net'), { pathToFileURL } = require('node:url');
-const { RuntimeClient } = require('../../dist/test/runtime/client');
-const { RuntimeConnection } = require('../../dist/test/runtime/connection');
+const { RuntimeClient } = require('../../dist/test/legacy-runtime/client');
+const { DesktopConnection } = require('../../dist/test/desktop/connection');
 const runtime = path.resolve('runtime'), execute = promisify(execFile);
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function stopped(pid) {
@@ -36,7 +36,7 @@ test('a VS Code lowercase drive path can persist the preview confirmation across
   const home = path.join(directory, 'home'), source = path.join(directory, 'no-source');
   const nativePath = runtime.replace(/^[A-Z]:/, value => value.toLowerCase());
   const client = new RuntimeClient(nativePath, home, source); t.after(() => client.dispose());
-  const connection = new RuntimeConnection({ runtimeDirectory: nativePath, dataHome: home, desktopHome: source, assetsDirectory: path.resolve('dist'), acquire: () => client.acquire() });
+  const connection = new DesktopConnection({ runtimeDirectory: nativePath, dataHome: home, desktopHome: source, assetsDirectory: path.resolve('dist'), acquire: () => client.acquire() });
   t.after(() => connection.dispose());
   const base = await connection.start(), first = await client.acquire();
   async function rpc(base, method, args) {
@@ -49,7 +49,7 @@ test('a VS Code lowercase drive path can persist the preview confirmation across
   assert.equal(result.value.value.welcomeNoticeVersion, '2026-09-28.1');
   await connection.dispose(); client.dispose(); await stopped(first.pid);
   const next = new RuntimeClient(runtime, home, source); t.after(() => next.dispose());
-  const reopened = new RuntimeConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: path.resolve('dist'), acquire: () => next.acquire() });
+  const reopened = new DesktopConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: path.resolve('dist'), acquire: () => next.acquire() });
   t.after(() => reopened.dispose());
   const again = await rpc(await reopened.start(), 'describe', {});
   assert.equal(again.value.namespaces.find(item => item.ns === 'ui-settings-general').value.welcomeNoticeVersion, '2026-09-28.1');
@@ -68,7 +68,7 @@ test('bundled runtime cold-starts without desktop, shares windows and exits only
   const separate = await independent.acquire();
   assert.notEqual(separate.pid, a.pid); assert.notEqual(separate.port, a.port);
   independent.dispose(); await stopped(separate.pid); process.kill(a.pid, 0);
-  const connection = new RuntimeConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: path.resolve('dist') });
+  const connection = new DesktopConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: path.resolve('dist') });
   t.after(() => connection.dispose());
   const base = await connection.start();
   assert.equal((await fetch(base + '/?dsh-companion=1')).status, 200);
@@ -92,7 +92,7 @@ test('one-time import preserves source, shares desktop credentials, excludes que
   assert.ok(report.skipped.some(item => item.id === 'pending' && item.code === 'PENDING_OR_INTERRUPTED'));
   // The runtime serves the desktop store: the desktop browser grant authenticates, and no copy exists.
   await assert.rejects(fs.access(path.join(home, '.credentials.yaml')), { code: 'ENOENT' });
-  const shared = new RuntimeConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: path.resolve('dist'), acquire: () => client.acquire() });
+  const shared = new DesktopConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: path.resolve('dist'), acquire: () => client.acquire() });
   t.after(() => shared.dispose());
   assert.equal((await fetch(await shared.start() + '/?dsh-companion=1')).status, 200);
   await shared.dispose();
@@ -128,7 +128,7 @@ test('desktop account sign-in is shared live through the desktop credential stor
   } };
   await fs.writeFile(store, JSON.stringify(document));
   const client = new RuntimeClient(runtime, home, source); t.after(() => client.dispose());
-  const connection = new RuntimeConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: path.resolve('dist'), acquire: () => client.acquire() });
+  const connection = new DesktopConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: path.resolve('dist'), acquire: () => client.acquire() });
   t.after(() => connection.dispose());
   const base = await connection.start(), address = await client.acquire();
   async function state() {

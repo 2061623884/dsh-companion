@@ -17,7 +17,7 @@ test('runtime preflight rejects missing, stale and mismatched artifacts without 
   for (const [name, version] of Object.entries(versions)) await write('runtime/node_modules/' + name + '/package.json', JSON.stringify({ version }));
   await write('runtime/node_modules/dsh-workbuddy-connect/package.json', JSON.stringify({ version: '0.6.10', main: 'lib/index.js' }));
   await write('runtime/node_modules/dsh-workbuddy-connect/lib/index.js', 'withDesktopWorkBuddyAuth(new WorkBuddyCredentialStore');
-  const { adaptWorkBuddyStatusClient } = await import('../../src/sidebar/client/workbuddy-status.mjs');
+  const { adaptWorkBuddyStatusClient } = await import('../../tests/fixtures/legacy-runtime/workbuddy-status.mjs');
   const original = 't("accessTokenExpires", { time: formatTime(status.expiresAt) })\n' +
     'accessTokenExpires: "Access token expires {time} (refresh is automatic)",\n' +
     'accessTokenExpires: "访问令牌 {time} 过期（自动续期）",';
@@ -30,7 +30,7 @@ test('runtime preflight rejects missing, stale and mismatched artifacts without 
   const { prepareSharedLogin } = await import('../../scripts/prepare-shared-login.mjs');
   await assert.rejects(prepareSharedLogin(path.join(root, 'runtime'), true), /not prepared/);
   await prepareSharedLogin(path.join(root, 'runtime'));
-  for (const name of ['host.mjs', 'import.mjs', 'workbuddy-auth.mjs']) { await write('src/runtime/' + name); await write('runtime/' + name); }
+  for (const name of ['host.mjs', 'import.mjs', 'workbuddy-auth.mjs']) { await write('tests/fixtures/legacy-runtime/' + name); await write('runtime/' + name); }
   await write('runtime/licenses.json', '[{"license":"MIT"}]');
   await write('runtime/node-version.json', '{"version":"24.21.0"}');
   await write('runtime/node_modules/typebox/package.json', '{"version":"1.3.27"}');

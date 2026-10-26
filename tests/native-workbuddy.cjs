@@ -3,7 +3,7 @@ const vscode = require('vscode'), fs = require('node:fs/promises'), path = requi
 const { pathToFileURL } = require('node:url'), { createHash } = require('node:crypto'), assert = require('node:assert/strict');
 exports.run = async () => {
   const root = path.resolve(__dirname, '..');
-  const { RuntimeClient } = require('../dist/test/runtime/client'), { RuntimeConnection } = require('../dist/test/runtime/connection');
+  const { RuntimeClient } = require('../dist/test/legacy-runtime/client'), { DesktopConnection } = require('../dist/test/desktop/connection');
   const { frameHtml } = require('../dist/test/sidebar/view');
   const extension = vscode.extensions.getExtension('local-development.dsh-companion');
   const runtime = path.join(extension.extensionPath, 'runtime');
@@ -25,7 +25,7 @@ fetch('/plugins/dsh-workbuddy-connect/status').then(response=>response.json()).t
   process.env.NODE_OPTIONS = (previous || '') + ' --import=' + pathToFileURL(path.join(root, 'tests/workbuddy-readonly-guard.mjs'));
   process.env.DSH_WORKBUDDY_TEST_NETWORK = requestsFile;
   const client = new RuntimeClient(runtime, home, source);
-  const connection = new RuntimeConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: directory, acquire: () => client.acquire() });
+  const connection = new DesktopConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: directory, acquire: () => client.acquire() });
   let panel, address;
   const result = { installedVersion: extension.packageJSON.version, vscodeVersion: vscode.version };
   try {

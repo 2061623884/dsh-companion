@@ -9,15 +9,21 @@ function wrapper() {
   const messages = [], timers = new Map(), attributes = new Map(), events = {};
   const status = { textContent: '' }, retry = { hidden: true, addEventListener: (name, fn) => { events[name] = fn; } };
   const loading = { setAttribute: (key, value) => attributes.set(key, value), querySelector: () => status };
+  const noticeEvents = {}, notice = { hidden: true }, noticeText = { textContent: '' };
+  const button = id => ({ disabled: false, addEventListener: (name, fn) => { noticeEvents[id] = fn; } });
+  const reconnect = button('reconnect');
+  const noticeElements = { 'dsh-companion-connection': notice, 'dsh-companion-connection-text': noticeText,
+    'dsh-companion-reconnect': reconnect, 'dsh-companion-reload': button('reload'), 'dsh-companion-dismiss': button('dismiss') };
   const peer = { postMessage() {} }, frame = { src: 'http://127.0.0.1:1234/', contentWindow: peer, inert: true, setAttribute() {}, addEventListener() {} };
   let receive;
   const script = /<script nonce="[^"]+">([\s\S]*?)<\/script>/.exec(frameHtml('http://127.0.0.1:1234', path.resolve('media/whale.svg')))[1];
   vm.runInNewContext(script, { URL, window: { origin: 'webview-origin', addEventListener(name, fn) { if(name === 'message') receive = fn; } },
-    document: { querySelector: () => frame, getElementById: id => id === 'dsh-companion-retry' ? retry : loading,
+    document: { querySelector: () => frame, getElementById: id => noticeElements[id] || (id === 'dsh-companion-retry' ? retry : loading),
       body: { classList: { contains: () => false } }, documentElement: {} },
     acquireVsCodeApi: () => ({ postMessage: message => messages.push(message) }), getComputedStyle: () => ({ getPropertyValue: () => '' }),
     MutationObserver: class { observe() {} }, setTimeout(fn, ms) { timers.set(fn, ms); return fn; }, clearTimeout(fn) { timers.delete(fn); } });
-  return { messages, timers, attributes, status, retry, frame, click: () => events.click(),
+  return { messages, timers, attributes, status, retry, frame, notice, noticeText, reconnect, noticeClick: id => noticeEvents[id](),
+    host: data => receive({ origin: 'webview-origin', data }), click: () => events.click(),
     send: data => receive({ source: peer, origin: 'http://127.0.0.1:1234', data: { source: 'dsh-companion-sidebar', ...data } }) };
 }
 
@@ -62,4 +68,19 @@ test('a page that never becomes ready reaches an error instead of exposing an un
   const [timeout, duration] = [...f.timers][0]; assert.ok(duration > 0 && duration <= 60000); timeout();
   assert.equal(f.attributes.has('data-error'), true); assert.match(f.status.textContent, /超时/);
   assert.equal(f.frame.inert, true); assert.equal(f.retry.hidden, false);
+});
+
+test('connection status uses a banner and only an explicit reload replaces the page', () => {
+  const f = wrapper(); f.send({ type: 'ui-ready' });
+  const source = f.frame.src;
+  f.host({ type: 'connection-status', state: 'reconnecting' });
+  assert.equal(f.notice.hidden, false); assert.match(f.noticeText.textContent, /草稿保留/);
+  assert.equal(f.frame.inert, false); assert.equal(f.frame.src, source); assert.equal(f.reconnect.disabled, true);
+  f.host({ type: 'connection-status', state: 'available' });
+  assert.match(f.noticeText.textContent, /先复制草稿/); assert.equal(f.reconnect.disabled, false);
+  assert.equal(f.messages.some(message => message.type === 'retry'), false);
+  f.noticeClick('reconnect'); assert.equal(f.messages.at(-1).type, 'reconnect');
+  f.noticeClick('dismiss'); assert.equal(f.notice.hidden, true);
+  f.noticeClick('reload'); assert.equal(f.messages.at(-1).type, 'retry');
+  assert.equal(f.frame.src, source);
 });

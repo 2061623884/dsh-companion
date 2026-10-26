@@ -1,7 +1,7 @@
 const { test } = require('node:test'), assert = require('node:assert/strict');
 const fs = require('node:fs/promises'), path = require('node:path'), os = require('node:os'), net = require('node:net');
 const { createHash } = require('node:crypto');
-const { RuntimeClient } = require('../../dist/test/runtime/client');
+const { RuntimeClient } = require('../../dist/test/legacy-runtime/client');
 
 test('invalid control JSON rejects the lease with a protocol error rather than throwing or retrying', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-invalid-control-'));

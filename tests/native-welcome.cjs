@@ -3,8 +3,8 @@ const vscode = require('vscode'), fs = require('node:fs/promises'), path = requi
 const assert = require('node:assert/strict');
 exports.run = async () => {
   const root = path.resolve(__dirname, '..');
-  const { RuntimeClient } = require('../dist/test/runtime/client');
-  const { RuntimeConnection } = require('../dist/test/runtime/connection');
+  const { RuntimeClient } = require('../dist/test/legacy-runtime/client');
+  const { DesktopConnection } = require('../dist/test/desktop/connection');
   const { frameHtml } = require('../dist/test/sidebar/view');
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-native-welcome-check-'));
   for (const name of ['bootstrap.js', 'sidebar.js', 'sidebar.css']) await fs.copyFile(path.join(root, 'dist', name), path.join(directory, name));
@@ -25,7 +25,7 @@ exports.run = async () => {
   const runtime = path.join(vscode.extensions.getExtension('local-development.dsh-companion').extensionPath, 'runtime');
   const home = path.join(directory, 'home'), source = path.join(directory, 'no-source');
   const client = new RuntimeClient(runtime, home, source);
-  const connection = new RuntimeConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: directory, acquire: () => client.acquire() });
+  const connection = new DesktopConnection({ runtimeDirectory: runtime, dataHome: home, desktopHome: source, assetsDirectory: directory, acquire: () => client.acquire() });
   let panel; const traces = [];
   try {
     const started = performance.now(), base = await connection.start();

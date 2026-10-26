@@ -1,5 +1,56 @@
 # Validation
 
+## Settings layout and source push (2026-10-26)
+
+Companion preview.4 reproduced the Settings whitespace defect in the installed preview.3: at a 299-pixel sidebar width, the title and close rows consumed 214 and 212 pixels of height. The scoped CSS repair keeps both rows at 40 pixels. Actual installed VSIX acceptance passed in VS Code 1.106.0 and 1.124.2 at widths 300, 420 and 960 pixels, with content using the remaining height and every direct settings section contained within the sidebar. Shared sessions, configuration, authentication, unsaved references and navigation checks also passed.
+
+The tested VSIX SHA-256 is `b9a9edb421b903b7d77b553d137b84cb326a1b99ba840070fec1f35487223cc1`. Archive scanning covered all 12 distribution files with no findings. The daily extension install matched its built assets; all 8,052 data files checked before and after installation were unchanged. This source push includes the matching Desktop patch and documentation; it does not upload that VSIX or claim hosted CI/build provenance.
+
+## Update reminders and structure refinement (2026-10-26)
+
+Companion preview.3 passed Windows type/script checks, all 92 unit tests, source privacy inventory and whitespace checks. New cases cover installed-version discovery with hidden subprocesses, semantic prerelease comparison, installed channels, concurrent checks, cache expiry, manual refresh, invalid metadata, HTTP/stream failure, cancellation and VS Code notification behavior.
+
+The real official Windows nightly feed returned 0.2.1-rc.3. The installed paired Desktop reported 0.2.1-rc.3.20261026.1; the checker correctly offered no downgrade. A native window-event probe launched the matching Desktop in isolation, connected through the actual proxy and created eight synthetic sessions: one Host and zero visible console-window events. The previously reported periodic flash was attributed to an unrelated background health task and corrected at its launcher; its task policy and running service were preserved.
+
+All seven relocated legacy implementation files match their previous bytes. The proxy implementation changed only its class name and import path. Final VSIX, installed-editor and daily-install evidence is retained in ignored local reports; no publication is authorized.
+
+## Windows validation of the coordinated preview (2026-10-26)
+
+The received Companion patch applied cleanly to 19da7cd, and the Desktop patch applied cleanly to upstream 22ddee3792402c3e70ec5f86a63c3e3e895a2f60. All six delivery-file checksums matched the supplied inventory. Companion's Windows type/script checks, 80 unit tests, source inventory and whitespace checks passed. The four targeted Desktop files passed all 149 tests on Windows. Desktop's complete local build passed all 10 artifact and aggregate-check gates.
+
+The agreed local Desktop test version is 0.2.1-rc.3.20261026.1; Companion is 0.4.0-preview.2. Packaging uses the existing proxy only in its child environment and a shorter isolated build checkout for Windows Python path limits. Exact archive, native process/session acceptance and daily-install evidence remain in ignored local reports; these source-test results alone do not claim their success. No commit, push or publication is authorized in this run.
+
+## Coordinated background start and session recovery source patches (2026-10-26)
+
+Companion base: `19da7cdc8d66b995b134a7f4830fb5704f34c11f`. Desktop patch base: `deepseek-ai/deepseek-harness` at `22ddee3792402c3e70ec5f86a63c3e3e895a2f60`. The original installed rc.2 result below remains unchanged. These are local source patches, not installed or published builds.
+
+Companion validation on Linux / Node 24.22.1:
+
+```sh
+npm test
+npm run check
+npm run check:source
+git diff --check
+```
+
+Build and TypeScript/script checks passed. The complete unit run reported 80 tests: 79 passed, zero failed, one Windows-only PowerShell CI-tool test skipped. The 36-test connection/view subset includes real authenticated loopback HTTP/WebSocket sockets, a genuine `WebSocket.close(1000)` handshake, Host exit, no POST replay, stale and timed-out candidates, startup credential readiness, local cancellation, probe disposal, old-generation completion, and explicit versus automatic start intent. View tests execute the actual recovery handlers and built frame bridge, preserving HTML, queued references and in-flight reference reads. The source privacy inventory and whitespace checks passed; they do not substitute for later complete release/history scanning.
+
+Desktop validation used its existing main-startup, single-instance and welcome-startup fixtures, plus capability packaging tests: 149 tests passed across four files. The main background regression additionally uses `apps/desktop/tests/expected/background-launch.json`; its one-case recording was inspected and then replayed with `CI=1`, without updating expected output. That app-owned expectation records calls at the Electron test seam: one Host instance, one Host start and zero stops across background readiness, repeated background launch and explicit open; only explicit open shows/focuses the workspace. It is not a recorded Session or a measurement of actual Windows windows.
+
+```sh
+pnpm exec vitest run \
+  apps/desktop/tests/single-instance.spec.ts \
+  apps/desktop/tests/main-startup.spec.ts \
+  apps/desktop/tests/welcome-startup.spec.ts \
+  apps/desktop/tests/background-capabilities.spec.ts
+```
+
+The equivalent test execution in this environment used isolated development dependencies and a temporary configuration retaining the repository's decorator plugin, runtime exec arguments and TypeScript aliases. Desktop also passed focused TypeScript checks for the new launch state, actual Electron App/single-instance interface, and relevant tests; a main-entry esbuild bundle with external packages; README translation-pair validation; and diff whitespace checks. A full monorepo build and complete desktop type dependency closure were not run.
+
+Independent review reproduced two additional defects before repair: graceful WebSocket closing falsely invalidated a healthy Host, and the toolbar's reconnect command replaced the draft-bearing page. Both were fixed; the reviewer independently reran their four associated lifecycle regressions successfully. The non-session startup expectation belongs to the Desktop app test layer, not the global Session replay tree.
+
+Still required before installation/publication: build/package/sign the matching Windows Desktop, run the modified Companion in isolated installed VS Code, verify two-window startup and later Desktop opening against one real Host PID, shared live output/cancellation, authentication transitions, and update/quit handoff. No real model requests, daily-profile modification, user installation, commit, push, tag or publication was performed. See [shared-session-solution.md](shared-session-solution.md).
+
 ## Background Host reuse prerequisite (2026-10-26, local)
 
 Result: failed. With installed Desktop 0.2.1-rc.2, first launch its bundled Host against synthetic data, create a session, then launch the unmodified desktop shell against that same isolated DSH home and a separate Electron user-data directory. Two distinct Host PIDs and loopback listener ports are observed. The original Host remains reachable and the shell's new Host reads the saved session, but it does not reuse the first Host. Test-owned processes were stopped afterward. Daily configuration and sessions were not used. Raw paths, process records and diagnostics remain ignored/local; only this sanitized conclusion is tracked.

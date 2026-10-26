@@ -1,8 +1,8 @@
 const { test } = require('node:test'), assert = require('node:assert/strict');
 const fs = require('node:fs/promises'), path = require('node:path'), os = require('node:os');
 const { pathToFileURL } = require('node:url');
-const { RuntimeClient } = require('../../dist/test/runtime/client');
-const { RuntimeConnection } = require('../../dist/test/runtime/connection');
+const { RuntimeClient } = require('../../dist/test/legacy-runtime/client');
+const { DesktopConnection } = require('../../dist/test/desktop/connection');
 
 test('actual bundled host discovers desktop WorkBuddy auth and protects it through HTTP logout', { timeout: 45000 }, async t => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-workbuddy-host-'));
@@ -23,7 +23,7 @@ test('actual bundled host discovers desktop WorkBuddy auth and protects it throu
     if (previousNetwork === undefined) delete process.env.DSH_WORKBUDDY_TEST_NETWORK; else process.env.DSH_WORKBUDDY_TEST_NETWORK = previousNetwork;
   });
   const client = new RuntimeClient(path.resolve('runtime'), home, source);
-  const connection = new RuntimeConnection({ runtimeDirectory: path.resolve('runtime'), dataHome: home, desktopHome: source,
+  const connection = new DesktopConnection({ runtimeDirectory: path.resolve('runtime'), dataHome: home, desktopHome: source,
     assetsDirectory: path.resolve('dist'), acquire: () => client.acquire() });
   t.after(async () => { await connection.dispose(); client.dispose(); });
   const base = await connection.start(), address = await client.acquire();

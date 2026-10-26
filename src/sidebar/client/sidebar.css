@@ -106,9 +106,13 @@ body[data-dsh-companion] [data-dsh-companion-settings] {
   position: fixed !important; inset: 36px 0 0 !important;
   width: 100% !important; max-width: 100% !important; height: calc(100% - 36px) !important;
   max-height: none !important; min-width: 0 !important; border-radius: 0 !important;
-  display: flex !important; flex-direction: column !important; transform: none !important;
+  display: grid !important; transform: none !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  grid-template-rows: auto auto minmax(0, 1fr) !important;
+  grid-template-areas: 'title header' 'nav nav' 'options options' !important;
 }
 body[data-dsh-companion] [data-dsh-companion-settings] > nav {
+  grid-area: nav;
   flex-direction: row !important; display: flex !important; flex-wrap: wrap;
   width: 100% !important; min-width: 0 !important; max-height: 130px; overflow: auto; padding: 6px !important;
   border-right: 0 !important; border-bottom: 1px solid var(--dsh-companion-border);
@@ -116,10 +120,13 @@ body[data-dsh-companion] [data-dsh-companion-settings] > nav {
 body[data-dsh-companion] [data-dsh-companion-settings] > nav > * { flex-shrink: 0; }
 body[data-dsh-companion] [data-dsh-companion-settings] > nav { gap: 4px; }
 body[data-dsh-companion] [data-dsh-companion-settings] > nav > :last-child {
-  display: flex; flex-direction: row; flex-wrap: wrap; gap: 2px; min-width: 0; flex: 1;
+  display: flex; flex-direction: row; flex-wrap: wrap; gap: 2px; min-width: 0; flex: 1; padding: 0 !important;
 }
-body[data-dsh-companion] [data-dsh-companion-settings] > nav button { padding: 6px 8px; height: 32px; }
-body[data-dsh-companion] [data-dsh-companion-settings] > div { min-width: 0 !important; width: 100%; flex: 1; }
+body[data-dsh-companion] [data-dsh-companion-settings] > nav button { padding: 6px 8px; height: 32px; min-width: 0 !important; flex: 0 0 auto; }
+body[data-dsh-companion] [data-dsh-companion-settings] > div { min-width: 0 !important; box-sizing: border-box; }
+body[data-dsh-companion] [data-dsh-companion-settings] > div:first-child { grid-area: title; padding: 8px 12px !important; align-self: center; }
+body[data-dsh-companion] [data-dsh-companion-settings] > div:nth-child(3) { grid-area: header; height: auto; padding: 6px 8px !important; align-items: center; }
+body[data-dsh-companion] [data-dsh-companion-settings] > div:last-child { grid-area: options; min-height: 0; overflow-y: auto; padding: 12px !important; }
 body[data-dsh-companion] [role="dialog"], body[data-dsh-companion] [role="menu"],
 body[data-dsh-companion] [role="listbox"] { max-width: calc(100vw - 12px); box-sizing: border-box; }
 body[data-dsh-companion] :focus-visible { outline-color: var(--dsh-companion-focus) !important; }

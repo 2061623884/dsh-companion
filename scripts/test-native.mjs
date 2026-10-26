@@ -12,7 +12,7 @@ if (!code) {
   code = path.join(local, 'Programs/Microsoft VS Code/Code.exe');
 }
 await access(code);
-const root = process.cwd(), fixture = await prepareTestWorkspace(root), execute = promisify(execFile);
+const root = process.cwd(), fixture = await prepareTestWorkspace(), execute = promisify(execFile);
 for (const [entry, resultFile] of [['native-runner.cjs', 'native-result.json'], ['native-reliability.cjs', 'native-reliability-result.json'], ['native-loading.cjs', 'native-loading-result.json'], ['native-navigation.cjs', 'native-navigation-result.json'], ['native-startup.cjs', 'native-startup-result.json']]) {
   const started = Date.now();
   await execute(code, ['--new-window', '--disable-workspace-trust', '--skip-welcome', '--skip-release-notes',

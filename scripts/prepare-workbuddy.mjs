@@ -1,7 +1,7 @@
 import { readFile, writeFile, copyFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { adaptWorkBuddyStatusClient } from '../src/sidebar/client/workbuddy-status.mjs';
+import { adaptWorkBuddyStatusClient } from '../tests/fixtures/legacy-runtime/workbuddy-status.mjs';
 
 // One checked seam in the pinned upstream provider. No global prototype patch,
 // desktop package edit or application-wide credential interception.
@@ -11,7 +11,7 @@ export async function prepareWorkBuddy(runtime) {
   const manifest = JSON.parse(await readFile(path.join(directory, 'package.json'), 'utf8'));
   if (manifest.version !== '0.6.10') throw new Error('WorkBuddy auth adapter requires pinned 0.6.10');
   const target = path.join(runtime, 'workbuddy-auth.mjs');
-  await copyFile(fileURLToPath(new URL('../src/runtime/workbuddy-auth.mjs', import.meta.url)), target);
+  await copyFile(fileURLToPath(new URL('../tests/fixtures/legacy-runtime/workbuddy-auth.mjs', import.meta.url)), target);
   const entry = path.join(directory, manifest.main);
   const original = '\tconst store = new WorkBuddyCredentialStore({\n\t\tvariant,\n\t\trefresh: (credential) => client.refreshToken(credential)\n\t});';
   const replacement = '\tconst store = withDesktopWorkBuddyAuth(new WorkBuddyCredentialStore({\n\t\tvariant,\n\t\trefresh: (credential) => client.refreshToken(credential)\n\t}), variant, parseWorkBuddyAuth, realmOf);';
