@@ -1,20 +1,13 @@
 # DSH Companion
 
-The VS Code client and its independently owned DSH execution environment.
+The VS Code client of the existing DeepSeek Harness desktop application.
 
-## Language
+**Desktop Host**: The backend process owned and started by the installed desktop application. It is the sole runtime and data owner used by the product.
 
-**Companion runtime**: The DSH Web core owned by Companion, shared by VS Code windows using the same data home.
-_Avoid_: desktop backend, hidden desktop
+**Desktop home**: The existing DSH data directory, resolved from DSH_HOME or the current user's default .dsh directory. Configuration, credentials and sessions remain managed by Desktop.
 
-**Companion home**: The independent configuration, sessions and attachment data used by Companion.
-_Avoid_: desktop profile
+**Desktop connection**: The extension's authenticated loopback HTTP/WebSocket proxy. It discovers the existing Host and forwards requests; releasing it does not stop Desktop.
 
-**Desktop home**: The existing desktop DSH data, used read-only during migration and for borrowed WorkBuddy access tokens, and the owner of the shared credential store.
-_Avoid_: shared home
+**Private browser adapter**: The page-scoped navigation, editor context and reference integration injected only into the VS Code view. It does not modify the desktop application's installed files or layout.
 
-**Shared credential store**: Desktop home's `.credentials.yaml`, read and written by desktop DSH and the Companion runtime alike, so one sign-in serves both.
-_Avoid_: credential copy, credential sync
-
-**Migration snapshot**: The initial copy of compatible configuration and historical data, with a recorded set of skipped session IDs.
-_Avoid_: synchronization, shared history
+**Legacy Companion home**: Data previously created by independent-runtime releases. The desktop-connected preview preserves it without automatic migration or deletion.

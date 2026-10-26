@@ -1,42 +1,11 @@
-# 当前进度与剩余问题
+# Current status
 
-以 0.3.10 为当前交付版本。
+0.4.0-preview.1 is a desktop-connected development preview. 0.3.10 remains the published independent-runtime release; no 0.4 preview installer is published.
 
-## 已完成
+Implemented: desktop process/port discovery, loopback authentication and proxying; missing/stopped desktop actions; desktop-owned login, configuration and sessions; existing sidebar, history-first navigation and unsaved code references; runtime exclusion from packaging.
 
-- VS Code 右侧 DSH 对话、会话历史、模型与工具入口，主题适配。
-- 自动绑定当前文件所属工作区，引用文件、选区和未保存内容，支持移除引用。
-- 内置 Node 与固定版本 DSH Web 运行时，多窗口共享后台，最后断开后保存退出。
-- 与桌面 DSH 共享通用凭据；账号平台地址不一致时明确报错并保留登录。
-- 集成测试按文件串行执行，保留多窗口并发断言和原有超时限制。
-- 数字鲸鱼动画持续到主题、样式和聊天界面就绪，再淡出；遵循减少动态效果设置。
-- 样式加载、界面初始化失败和界面等待超时会显示错误与重试入口，失败时保持界面锁定。
-- 五个导航入口在横排图标与右侧文字列表之间切换，支持窄窗口抽屉和鼠标离开自动收起。
-- 设置、插件和自动化任务再次点击返回原聊天，保留草稿与代码引用。
-- 工作区绑定协调原生会话恢复；固定安装依赖使用预生成解析索引，打包前核验完整性。
-- 手动准备流程的 CI 回执跨 checkout 保留；安装验收与候选包使用同一份必需结果规则。
-- 发布包清单、版本、许可证、隐私和 SHA-256 检查，以及实际 VSIX 隔离安装验收。
+Validation evidence for this preview will be recorded in validation.md and local package reports. It uses the installed desktop program's Host with synthetic data, not a second bundled runtime or the user's daily profile.
 
-## 已有验证
+Before later publication, hosted CI needs a verified desktop installer/fixture preparation step. Future desktop UI protocol changes may require an extension update. Legacy independent-plugin data is retained and is not automatically merged into Desktop.
 
-历史基线提交 `cfd119b` 的 [CI](https://github.com/2061623884/dsh-companion/actions/runs/39909812004) 与[完整手动准备流程](https://github.com/2061623884/dsh-companion/actions/runs/39911328246) 均成功。0.3.10 的导航和启动改动在此基础上继续验证，具体范围见[验证记录](validation.md)。
-
-每次发布均重新校验最终 VSIX 的哈希、隐私和两个版本的安装结果；0.3.10 的具体构建提交、包哈希及结果以该版本 Release 说明为准，不沿用旧包的验收回执。
-
-自动化验收使用合成凭据、合成项目和本地拦截，没有调用真实模型；不能据此推断所有真实账号、模型服务和第三方工具均已验收。托管 CI 的结果以对应提交的 GitHub Actions 页面为准。
-
-## 剩余问题与边界
-
-| 项目 | 当前状态与后续方向 |
-| --- | --- |
-| 平台支持 | 当前仅 Windows x64、本机工作区；macOS、Linux、WSL 和远程工作区尚未支持。 |
-| 安装包体积 | 约 201 MiB，主要来自内置 Node 与 DSH 依赖；后续按依赖契约评估裁剪。 |
-| 上游兼容 | 适配固定 DSH 0.2.1-rc.2，升级上游前需重新核验私有界面和凭据契约。 |
-| 平台地址不一致 | 登录会保留，但仍需用户统一两端账号平台配置后重连；不自动修改平台。 |
-| 历史迁移 | 一次性导入兼容配置和已完成历史；未完成记录、置顶排序及全部第三方状态不属于完整迁移范围。 |
-| 第三方授权 | 通用凭据库之外的登录按提供方处理；WorkBuddy 借用凭据保持只读，过期不自动刷新。 |
-| 真实服务覆盖 | 继续积累不同账号、模型和工具的真实使用反馈；不把合成测试等同于全量业务验收。 |
-| 分发 | 本轮通过 GitHub Release 分发 VSIX；Marketplace 发布和自动上传流程尚未接入。 |
-| 拖拽引用 | 已延期，当前使用自动引用和右键引用。 |
-
-后续优先处理可复现的真实使用问题，再评估安装包瘦身与上游升级；不扩大本轮功能范围。
+The background-reuse prerequisite failed on Desktop 0.2.1-rc.2: launching the desktop shell while a standalone Host runs starts a second Host against the same isolated profile. Both can read a previously saved session, but the shell does not attach to the first process. Automatic standalone Host startup is deliberately unimplemented. See [the reproduction and remaining questions](desktop-host-reuse.md). This is separate from the passing connection tests against one existing Host.

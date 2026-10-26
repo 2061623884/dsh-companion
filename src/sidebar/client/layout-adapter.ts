@@ -62,7 +62,7 @@ export function createSidebarLayout(ctx: DshContext, syncInput: (reference: Edit
     ctx.layout.selectPanel(null);
     ctx.layout.closeRightbar(); ctx.uiWorkspace.startSession(workspaceId); navigation.closeDrawer();
   }, 'new', true);
-  header.append(newSession, history);
+  header.append(history, newSession);
   for(const [label, panel] of [['插件', 'plugins'], ['自动化任务', 'schedules']] as const) {
     header.append(button(label, () => {
       const settings = ctx.slots.entries('sidebar.settings')[0].store.create();

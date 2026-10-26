@@ -1,24 +1,15 @@
 // The only development extension is an empty harness. Companion is installed from VSIX.
 const vscode = require('vscode'), assert = require('node:assert/strict'), fs = require('node:fs/promises');
-const path = require('node:path'), net = require('node:net'), { createHash } = require('node:crypto'), { pathToFileURL } = require('node:url');
+const path = require('node:path');
 const http = require('node:http');
-const { prepareWorkBuddyProfile } = require('./workbuddy-profile-fixture.cjs');
 exports.run = async () => {
   const root = process.env.DSH_RELEASE_ROOT, desktop = process.env.DSH_HOME, id = process.env.DSH_RELEASE_EXTENSION_ID;
   const extension = vscode.extensions.getExtension(id);
   assert.ok(extension, 'VSIX extension must be installed');
   assert.equal(path.dirname(extension.extensionPath).toLowerCase(), process.env.DSH_RELEASE_EXTENSIONS.toLowerCase());
-  const desktopFixture = await prepareWorkBuddyProfile(desktop);
   const sharedStore = path.join(desktop, '.credentials.yaml');
-  await fs.writeFile(sharedStore, JSON.stringify({ version: 1, refs: {}, records: {
-    'deepseek-account-platform/default': { kind: 'grant', payload: { version: 1,
-      token: 'synthetic-native-token', issuer: 'https://platform.deepseek.com' } },
-  } }));
-  const previous = process.env.NODE_OPTIONS, networkFile = path.join(desktop, 'network.json');
-  process.env.NODE_OPTIONS = '--import=' + pathToFileURL(path.join(root, 'tests/workbuddy-network-fixture.mjs'));
-  process.env.DSH_WORKBUDDY_TEST_NETWORK = networkFile;
-  await fs.writeFile(networkFile, '[]');
-  const pending = new Map(); let serial = 0, ws, lease, pid, session;
+  const networkFile = process.env.DSH_DESKTOP_NETWORK;
+  const pending = new Map(); let serial = 0, ws, session;
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   const result = { vscodeVersion: vscode.version, installedPackage: true, phase: 0 };
   const probe = { prompts: 0, hasSelection: false }, originalRequest = http.request;
@@ -106,15 +97,11 @@ exports.run = async () => {
     await until(async () => evaluate(`!!document.getElementById('root') && !document.getElementById('root').inert && ![...document.querySelectorAll('button')].some(b=>/^(继续|Continue)$/.test(b.textContent.trim()))`), 'welcome-dismissed');
     result.phase = 4;
     await until(async () => evaluate(`!!document.querySelector('[data-composer-chip="vscode-editor"]') && document.querySelector('#dsh-companion-toolbar button[aria-label="新建会话"]')?.disabled === false`), 'automatic-workspace-and-reference');
-    // Observe a runtime already owned by the installed extension. Never start a substitute.
+    // The installed extension connects to the existing Desktop Host and creates no independent home.
     const actualHome = path.join(path.dirname(process.env.DSH_RELEASE_RESULT), 'profile/User/globalStorage', id, 'dsh');
-    const identity = createHash('sha256').update(path.resolve(actualHome).toLowerCase()).digest('hex').slice(0, 32);
-    result.phase = 5;
-    lease = net.connect('\\\\.\\pipe\\dsh-companion-' + identity);
-    pid = await new Promise((resolve, reject) => {
-      let buffer = ''; lease.once('error', reject); lease.on('connect', () => lease.write(JSON.stringify({ type: 'attach', version: extension.packageJSON.version }) + '\n'));
-      lease.on('data', data => { buffer += data; for (const line of buffer.split('\n').slice(0, -1)) { const message = JSON.parse(line); if (message.type === 'ready') resolve(message.pid); else if (message.type === 'error') reject(new Error('Release runtime attach failed')); } buffer = buffer.slice(buffer.lastIndexOf('\n') + 1); });
-    });
+    await assert.rejects(fs.access(path.join(extension.extensionPath, 'runtime')), { code: 'ENOENT' });
+    await assert.rejects(fs.access(actualHome), { code: 'ENOENT' });
+    result.desktopRuntimeShared = true;
     // Submit through the real installed composer; the loopback fixture rejects before backend admission.
     result.phase = 6;
     await evaluate(`(() => {
@@ -146,6 +133,24 @@ exports.run = async () => {
     assert.equal(await account('getState'), 'credential-stored');
     await assert.rejects(fs.access(path.join(actualHome, '.credentials.yaml')), { code: 'ENOENT' });
     result.sharedLogin = true;
+    const { desktopRpc } = await import('./desktop-fixture.mjs');
+    const sessions = await desktopRpc(desktop, process.env.DSH_DESKTOP_ADDRESS, 'session/list', { _request: {} });
+    assert.ok(JSON.stringify(sessions).includes(result.promptSessionId)); result.sharedSessions = true;
+    const settings = await desktopRpc(desktop, process.env.DSH_DESKTOP_ADDRESS, 'settings/describe', {});
+    assert.ok(JSON.stringify(settings).includes('2026-09-28.1')); result.sharedConfiguration = true;
+    for (const label of ['插件', '自动化任务', '设置']) {
+      await evaluate(`document.querySelector('#dsh-companion-toolbar button[aria-label="${label}"]').click();true`);
+      await delay(350);
+      await evaluate(`document.querySelector('#dsh-companion-toolbar button[aria-label="${label}"]').click();true`);
+      await delay(350); assert.ok(await evaluate(`!!document.querySelector('[data-composer-input]')`));
+    }
+    result.navigationPreserved = true;
+    await evaluate(`(() => {const input=document.querySelector('[data-composer-input]');input.focus();const r=document.createRange();r.selectNodeContents(input);getSelection().removeAllRanges();getSelection().addRange(r);document.execCommand('insertText',false,'请解释当前代码选区');return true;})()`);
+    const mainTarget = (await send('Target.getTargets')).targetInfos.find(value => value.type === 'page' && value.url.includes('workbench'));
+    const screenshotSession = (await send('Target.attachToTarget', { targetId: mainTarget.targetId, flatten: true })).sessionId;
+    await delay(250);
+    const screenshot = await send('Page.captureScreenshot', { format: 'png' }, screenshotSession);
+    await fs.writeFile(path.join(root, '.test-work/release/desktop-preview-' + vscode.version + '.png'), Buffer.from(screenshot.data, 'base64'));
     assert.equal(await account('signOut'), 'signed-out');
     const shared = require('../node_modules/js-yaml').load(await fs.readFile(sharedStore, 'utf8'));
     assert.equal(shared.records['deepseek-account-platform/default'], undefined);
@@ -161,14 +166,8 @@ exports.run = async () => {
   } finally {
     result.interceptedPrompts = probe.prompts;
     http.request = originalRequest; interceptor.closeAllConnections(); await new Promise(resolve => interceptor.close(resolve));
-    ws?.close(); lease?.destroy();
+    ws?.close();
     for (const request of pending.values()) { clearTimeout(request.timer); request.reject(new Error('Release debugger closed')); }
-    if (previous === undefined) delete process.env.NODE_OPTIONS; else process.env.NODE_OPTIONS = previous;
-    delete process.env.DSH_WORKBUDDY_TEST_NETWORK;
-    result.desktopUnchanged = await desktopFixture.unchanged();
-    // Runtime exit is checked by the outer runner after VS Code terminates.
-    result.runtimePid = pid;
     await fs.writeFile(process.env.DSH_RELEASE_RESULT, JSON.stringify(result));
   }
-  assert.equal(result.desktopUnchanged, true);
 };

@@ -20,9 +20,7 @@ export function releaseEntryViolation(name) {
     /\.(pem|key|p12|pfx|log|sqlite3?|db|jsonl(?:\.zstd)?|zip|7z|tgz|tar|gz|vsix)$/i.test(name)) return 'RELEASE_PRIVATE_ENTRY';
   if (/^(\[Content_Types\]\.xml|extension\.vsixmanifest)$/.test(name) ||
     /^extension\/(package\.json|readme\.md|changelog\.md|license(?:\.txt)?|third_party_notices\.md|media\/whale\.svg)$/i.test(name) ||
-    /^extension\/dist\/(extension\.js|sidebar\.js|bootstrap\.js|sidebar\.css)$/.test(name) ||
-    /^extension\/runtime\/(package(?:-lock)?\.json|licenses\.json|node-version\.json|(?:startup-)?bundle-manifest\.json|(?:host|import|workbuddy-auth)\.mjs|bin\/(node\.exe|NODE-LICENSE))$/.test(name) ||
-    /^extension\/runtime\/node_modules\/.+/.test(name)) return null;
+    /^extension\/dist\/(extension\.js|sidebar\.js|bootstrap\.js|sidebar\.css)$/.test(name)) return null;
   return 'RELEASE_UNEXPECTED_ENTRY';
 }
 
@@ -32,9 +30,7 @@ export function releaseEntryViolation(name) {
 export async function checkReleaseArchive(root, archive, directory) {
   const metadata = await releaseMetadata(root), seen = new Set(), contents = new Map();
   const approved = JSON.parse(await readFile(path.join(root, 'scripts/release-public-findings.json'), 'utf8'));
-  const required = ['package.json', 'dist/extension.js', 'dist/sidebar.js', 'dist/bootstrap.js', 'dist/sidebar.css', 'media/whale.svg',
-    'runtime/bin/node.exe', 'runtime/bin/NODE-LICENSE', 'runtime/licenses.json', 'runtime/node-version.json', 'runtime/package.json',
-    'runtime/host.mjs', 'runtime/import.mjs', 'runtime/workbuddy-auth.mjs', 'runtime/bundle-manifest.json', 'runtime/startup-bundle-manifest.json'];
+  const required = ['package.json', 'dist/extension.js', 'dist/sidebar.js', 'dist/bootstrap.js', 'dist/sidebar.css', 'media/whale.svg'];
   const zip = await openPromise(archive, { lazyEntries: true, strictFileNames: true });
   try {
     for await (const entry of zip.eachEntry()) {

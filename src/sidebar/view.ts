@@ -5,6 +5,9 @@ import { RuntimeConnection } from '../runtime/connection';
 import { EditorContext } from '../context/editor-context';
 import { EditorReference, HostMessage, isClientMessage } from '../protocol';
 import { loadingHtml, loadingMarkup } from './loading';
+import { DesktopError, desktopDownloadUrl } from '../desktop/client';
+
+declare const __DSH_CONNECTION_ACTIONS__: string;
 
 export class SidebarView implements vscode.WebviewViewProvider, vscode.Disposable {
   private view: vscode.WebviewView | undefined;
@@ -24,6 +27,11 @@ export class SidebarView implements vscode.WebviewViewProvider, vscode.Disposabl
     const messages = view.webview.onDidReceiveMessage((value: unknown) => {
       if (!isClientMessage(value)) return;
       if (value.type === 'retry') { void this.load(true); return; }
+      if (value.type === 'install-desktop') { void vscode.env.openExternal(vscode.Uri.parse(desktopDownloadUrl)); return; }
+      if (value.type === 'open-desktop') {
+        void this.connection.openDesktop().then(() => this.load(true, true), error => this.showConnectionError(error));
+        return;
+      }
       if (value.type === 'ui-error') { this.ready = false; this.log.appendLine(value.code); return; }
       if (value.type === 'ready') {
         if (!this.ready) this.trace('sidebar-ready', performance.now() - this.loadStarted);
@@ -64,7 +72,28 @@ export class SidebarView implements vscode.WebviewViewProvider, vscode.Disposabl
   }
   refresh(): Promise<void> { return this.load(true); }
 
-  private async load(reconnect: boolean): Promise<void> {
+  async desktopUnavailable(error: DesktopError): Promise<void> {
+    if (!this.ready || !this.view) return;
+    this.ready = false;
+    const generation = ++this.generation;
+    this.showConnectionError(error);
+    const deadline = Date.now() + 45000;
+    while (generation === this.generation && Date.now() < deadline) {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (generation !== this.generation) return;
+      try {
+        await this.connection.reconnect();
+        if (generation === this.generation) await this.load(false);
+        return;
+      } catch (next) {
+        if (!['DSH_DESKTOP_NOT_RUNNING', 'DSH_DESKTOP_NOT_READY'].includes((next as DesktopError).code)) {
+          this.showConnectionError(next as Error); return;
+        }
+      }
+    }
+  }
+
+  private async load(reconnect: boolean, waitForDesktop = false): Promise<void> {
     const view = this.view;
     if (!view) return;
     const generation = ++this.generation;
@@ -73,16 +102,34 @@ export class SidebarView implements vscode.WebviewViewProvider, vscode.Disposabl
     view.webview.html = loadingHtml(path.join(this.extensionPath, 'media', 'whale.svg'));
     try {
       if (vscode.env.remoteName) throw new Error('首版需要本机 VS Code 窗口，请从 Windows 本地工作区使用 DSH Companion');
-      const base = reconnect ? await this.connection.reconnect() : await this.connection.start();
+      let base: string;
+      const deadline = Date.now() + 45000;
+      while (true) {
+        try { base = reconnect ? await this.connection.reconnect() : await this.connection.start(); break; }
+        catch (error) {
+          if (!waitForDesktop || !['DSH_DESKTOP_NOT_RUNNING', 'DSH_DESKTOP_NOT_READY'].includes((error as DesktopError).code) || Date.now() >= deadline) throw error;
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          if (generation !== this.generation) return;
+        }
+      }
       if (generation !== this.generation) return;
       this.trace('backend-ready', performance.now() - this.loadStarted);
       view.webview.html = frameHtml(base, path.join(this.extensionPath, 'media', 'whale.svg'));
     } catch (error) {
       if (generation !== this.generation) return;
-      this.log.appendLine((error as Error).stack || (error as Error).message);
-      const message = (error as Error).message.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-      view.webview.html = `<!doctype html><html lang="zh-CN"><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none';style-src 'unsafe-inline'"><style>body{padding:24px;background:var(--vscode-sideBar-background);color:var(--vscode-foreground);font:var(--vscode-font-size) var(--vscode-font-family);line-height:1.8}</style><p>${message}</p><p>点击侧栏标题的重新连接按钮重试。插件使用自带的独立后台，不依赖桌面 DSH。</p></html>`;
+      this.showConnectionError(error as Error);
     }
+  }
+
+  private showConnectionError(error: Error): void {
+    if (!this.view) return;
+    this.log.appendLine(error.message);
+    const message = error.message.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+    const action = (error as DesktopError).code === 'DSH_DESKTOP_NOT_INSTALLED' ? 'install-desktop' :
+      (error as DesktopError).code === 'DSH_DESKTOP_NOT_RUNNING' ? 'open-desktop' : 'retry';
+    const label = action === 'install-desktop' ? '下载桌面端' : action === 'open-desktop' ? '打开桌面端' : '重新连接';
+    const nonce = randomBytes(18).toString('base64');
+    this.view.webview.html = `<!doctype html><html lang="zh-CN"><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none';script-src 'nonce-${nonce}';style-src 'unsafe-inline'"><style>body{padding:24px;background:var(--vscode-sideBar-background);color:var(--vscode-foreground);font:var(--vscode-font-size) var(--vscode-font-family);line-height:1.8}button{padding:7px 12px;margin-right:8px;border:0;border-radius:3px;cursor:pointer;background:var(--vscode-button-background);color:var(--vscode-button-foreground);font:inherit}p{margin-bottom:18px}</style><h3>连接 DeepSeek Harness 桌面端</h3><p>${message}</p><button data-action="${action}">${label}</button>${action === 'retry' ? '' : '<button data-action="retry">重新连接</button>'}<p>登录、配置和会话由桌面端统一管理。</p><script nonce="${nonce}">${__DSH_CONNECTION_ACTIONS__}</script></html>`;
   }
 
   dispose(): void { this.generation++; this.subscription.dispose(); this.view = undefined; }

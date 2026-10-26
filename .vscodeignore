@@ -1,4 +1,5 @@
 .git/**
+runtime/**
 .github/**
 node_modules/**
 src/**

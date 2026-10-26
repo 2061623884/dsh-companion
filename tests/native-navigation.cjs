@@ -11,10 +11,10 @@ async function probe() {
     throw new Error('UI did not become ready');
   };
   try {
-    await wait(() => query('[data-composer-input][contenteditable="true"]') && query('[data-composer-chip="vscode-editor"]') && !query('#dsh-companion-toolbar button').disabled);
+    await wait(() => query('[data-composer-input][contenteditable="true"]') && query('[data-composer-chip="vscode-editor"]') && !query('#dsh-companion-toolbar button[aria-label="新建会话"]').disabled);
     await settle();
     const toolbar = query('#dsh-companion-toolbar'), buttons = [...toolbar.querySelectorAll('button')];
-    const labels = ['新建会话', '历史会话', '插件', '自动化任务', '设置'];
+    const labels = ['历史会话', '新建会话', '插件', '自动化任务', '设置'];
     check(JSON.stringify(buttons.map(button => button.getAttribute('aria-label'))) === JSON.stringify(labels), 'exactly five ordered entrances');
     const center = query('[data-dsh-companion-center]'), input = query('[data-composer-input]');
     check(toolbar.dataset.expanded === 'false', 'initially collapsed');
@@ -36,7 +36,7 @@ async function probe() {
       });
       return samples;
     };
-    const opening = await motion(() => buttons[1].click()); await settle();
+    const opening = await motion(() => buttons[0].click()); await settle();
     check(toolbar.dataset.expanded === 'true', 'history opens sidebar');
     check(buttons.every((button, i) => button === toolbar.children[i]), 'same five DOM entrances');
     check(buttons.every(button => getComputedStyle(button.querySelector('span')).display !== 'none'), 'all five labels visible');
@@ -70,11 +70,11 @@ async function probe() {
         check(new Set(samples.map(sample => Math.round(sample.buttonY))).size > 2, name + ' entrances animate together');
       }
     }
-    buttons[1].click(); await settle(); buttons[1].click(); await settle();
+    buttons[0].click(); await settle(); buttons[0].click(); await settle();
     check(toolbar.dataset.expanded === 'false' && !center.inert, 'history closes sidebar');
     check(query('[data-composer-input]').innerText.includes('NAVIGATION_DRAFT') && query('[data-composer-chip="vscode-editor"]').textContent === reference, 'draft and reference preserved');
     for(const index of [2, 3, 4]) {
-      buttons[1].click(); await settle(); buttons[index].click(); await settle();
+      buttons[0].click(); await settle(); buttons[index].click(); await settle();
       check(index === 4 ? !!query('[data-dsh-companion-settings]') : !center.querySelector('[data-composer-input]'), labels[index] + ' opens');
       check(toolbar.dataset.expanded === String(innerWidth >= 760), labels[index] + ' respects drawer mode');
       buttons[index].click(); await settle();
@@ -82,13 +82,13 @@ async function probe() {
       check(query('[data-composer-input]').innerText.includes('NAVIGATION_DRAFT'), labels[index] + ' preserves the current draft');
       buttons[index].click(); await settle();
       // The history entrance returns to chat and closes settings before toggling.
-      buttons[1].click(); await settle();
+      buttons[0].click(); await settle();
       check(!query('[data-dsh-companion-settings]') && !!center.querySelector('[data-composer-input]'), labels[index] + ' returns to chat');
-      if(toolbar.dataset.expanded === 'true') { buttons[1].click(); await settle(); }
+      if(toolbar.dataset.expanded === 'true') { buttons[0].click(); await settle(); }
     }
     buttons[2].click(); await settle(); buttons[3].click(); await settle(); buttons[4].click(); await settle(); buttons[4].click(); await settle();
     check(!query('[data-dsh-companion-settings]') && !!center.querySelector('[data-composer-input]'), 'switching panels then toggling settings returns to chat');
-    buttons[1].click(); await settle(); buttons[0].click(); await settle();
+    buttons[0].click(); await settle(); buttons[1].click(); await settle();
     check(!!center.querySelector('[data-composer-input]') && !center.querySelector('[data-composer-input]').innerText.includes('NAVIGATION_DRAFT'), 'new session opens blank composer');
     check(toolbar.dataset.expanded === String(innerWidth >= 760), 'new session respects drawer mode');
     parent.postMessage({ type: 'navigation-result', width: innerWidth, checks }, '*');

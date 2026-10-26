@@ -6,6 +6,16 @@ Module._load = function (name, ...args) {
 const { SidebarView, frameHtml } = require('../../dist/test/sidebar/view');
 Module._load = load;
 const file = { kind: 'file', uri: 'file:///a.py', name: 'a.py', version: 1 };
+
+test('missing and stopped desktop screens offer the corresponding user action', async () => {
+  for (const [code,action] of [['DSH_DESKTOP_NOT_INSTALLED','install-desktop'],['DSH_DESKTOP_NOT_RUNNING','open-desktop']]) {
+    const editor={onChange:()=>({dispose(){}}),snapshot:()=>({reference:null})};
+    const sidebar=new SidebarView(path.resolve('.'),{start:async()=>{throw Object.assign(new Error('Synthetic desktop status'),{code});}},editor,{appendLine(){}}), view=webview();
+    sidebar.resolveWebviewView(view.value);await new Promise(resolve=>setImmediate(resolve));
+    assert.match(view.value.webview.html,new RegExp('data-action="'+action+'"'));
+    assert.doesNotMatch(view.value.webview.html,/<iframe|不依赖桌面/);sidebar.dispose();
+  }
+});
 test('the whale remains visible after backend readiness while the chat page loads', async () => {
   const editor = { onChange: () => ({ dispose() {} }), snapshot: () => ({ reference: file }) };
   const sidebar = new SidebarView(path.resolve('.'), { start: async () => 'http://127.0.0.1:1234' }, editor, {}), view = webview();

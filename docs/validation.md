@@ -1,5 +1,17 @@
 # Validation
 
+## Background Host reuse prerequisite (2026-10-26, local)
+
+Result: failed. With installed Desktop 0.2.1-rc.2, first launch its bundled Host against synthetic data, create a session, then launch the unmodified desktop shell against that same isolated DSH home and a separate Electron user-data directory. Two distinct Host PIDs and loopback listener ports are observed. The original Host remains reachable and the shell's new Host reads the saved session, but it does not reuse the first Host. Test-owned processes were stopped afterward. Daily configuration and sessions were not used. Raw paths, process records and diagnostics remain ignored/local; only this sanitized conclusion is tracked.
+
+This does not test cross-process task ownership, cancellation, live synchronization, concurrent-write integrity, or desktop update handoff. Automatic standalone Host startup was not implemented or installed. See [the problem description](desktop-host-reuse.md).
+
+## 0.4.0-preview.1 desktop connection
+
+This local preview uses the installed Desktop Host with isolated synthetic data. Type/script checks and 54 unit tests passed. Desktop integration verifies authenticated discovery, shared configuration/session IDs, a stopped-and-restarted Host at a new port, and Desktop survival after proxy disposal. Final archive and installed acceptance reports under ignored .test-work/release bind the checked VSIX hash and editor versions; no hosted CI or publication is claimed.
+
+The installed smoke covers the retained editor reference, unsaved selection serialization, immediate send feedback and failed-draft recovery, loading dismissal, page toggles, desktop login/sign-out, and the absence of a packaged runtime/independent data home. A real model call is not part of acceptance. Old runtime-specific records below describe historical releases only.
+
 ## 0.3.10 navigation and release checks (2026-10-25, local)
 
 The first hosted run for `a58408e` passed source/privacy and quick checks but failed before runtime tests: the locked upstream Git URL no longer accepted anonymous fetches. Local anonymous `git ls-remote` reproduced the failure and GitHub returned 404. The public fork preserves commit `4738217d156c46f088d424dedc83a66e7308f64a`, tree `30026abad523ce70ca9ad3400d97640fca2f9aa5` and its MIT license. Only the dependency download URL was changed, retaining the version and package integrity. Final publication requires a fresh dependency installation and checks for the corrected source; the failed run is not counted as passed.

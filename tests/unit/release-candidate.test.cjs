@@ -23,7 +23,8 @@ async function fixture(t) {
   await write(output + filename, bytes); await write(output + 'build-source.json', { ...source, sha256 });
   const archive = { version: '0.0.1', id: 'synthetic.fixture', filename, target: 'win32-x64', files: 2, scannedFiles: 2, reviewedPublicFindings: 0, sha256 };
   const installed = { version: '0.0.1', sha256, results: versions.map(vscodeVersion => ({ vscodeVersion, installedPackage: true,
-    workspaceBound: true, unsavedReference: true, draftRestored: true, desktopUnchanged: true, ownedRuntimeExited: true,
+    workspaceBound: true, unsavedReference: true, draftRestored: true, desktopRuntimeShared: true, desktopSurvivesDisconnect: true,
+    sharedConfiguration: true, sharedSessions: true,
     sharedLogin: true, sharedSignOut: true, loadingDismissed: true, interceptedPrompts: 1, generationCalls: 0,
     privateFixtureOnly: 'not copied to public metadata' })) };
   await write(output + 'archive-check.json', archive); await write(output + 'installed-check.json', installed);

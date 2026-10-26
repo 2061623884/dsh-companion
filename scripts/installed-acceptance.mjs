@@ -1,7 +1,7 @@
 /** One acceptance contract for the installed smoke runner and candidate preparation. */
 export const installedAcceptanceFields = [
-  'installedPackage', 'workspaceBound', 'unsavedReference', 'draftRestored', 'desktopUnchanged',
-  'ownedRuntimeExited', 'sharedLogin', 'sharedSignOut', 'loadingDismissed',
+  'installedPackage', 'workspaceBound', 'unsavedReference', 'draftRestored', 'desktopRuntimeShared',
+  'desktopSurvivesDisconnect', 'sharedConfiguration', 'sharedSessions', 'sharedLogin', 'sharedSignOut', 'loadingDismissed',
 ];
 
 /** @param {Record<string, unknown>} result @param {string} version */

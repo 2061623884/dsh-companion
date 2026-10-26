@@ -52,19 +52,17 @@ test('release versions and final ZIP enforce metadata, required runtime, privacy
   await fs.writeFile(approvals, '[]');
   const manifest = { name: 'dsh-companion', publisher: 'synthetic', version: '0.0.1' }, runtime = { version: '0.0.1' };
   const files = new Map([
-    ['package.json', JSON.stringify(manifest)], ['runtime/package.json', JSON.stringify(runtime)],
+    ['package.json', JSON.stringify(manifest)],
     ...['dist/extension.js', 'dist/sidebar.js', 'dist/bootstrap.js', 'dist/sidebar.css', 'media/whale.svg',
-      'runtime/bin/node.exe', 'runtime/bin/NODE-LICENSE', 'runtime/licenses.json', 'runtime/node-version.json', 'runtime/host.mjs',
-      'runtime/import.mjs', 'runtime/workbuddy-auth.mjs', 'runtime/bundle-manifest.json', 'runtime/startup-bundle-manifest.json',
       'LICENSE', 'THIRD_PARTY_NOTICES.md'].map(name => [name, 'synthetic-public-artifact'])
   ]);
   for (const [name, content] of files) { const target = path.join(root, name); await fs.mkdir(path.dirname(target), { recursive: true }); await fs.writeFile(target, content); }
   const lock = { version: '0.0.1', packages: { '': { version: '0.0.1' } } };
-  for (const name of ['package-lock.json', 'runtime/package-lock.json']) await fs.writeFile(path.join(root, name), JSON.stringify(lock));
+  await fs.writeFile(path.join(root, 'package-lock.json'), JSON.stringify(lock));
   assert.equal((await releaseMetadata(root)).filename, 'dsh-companion-0.0.1-win32-x64.vsix');
-  await fs.writeFile(path.join(root, 'runtime/package-lock.json'), JSON.stringify({ ...lock, packages: { '': { version: '0.0.2' } } }));
+  await fs.writeFile(path.join(root, 'package-lock.json'), JSON.stringify({ ...lock, packages: { '': { version: '0.0.2' } } }));
   await assert.rejects(releaseMetadata(root), /RELEASE_VERSION_MISMATCH/);
-  await fs.writeFile(path.join(root, 'runtime/package-lock.json'), JSON.stringify(lock));
+  await fs.writeFile(path.join(root, 'package-lock.json'), JSON.stringify(lock));
   const identity = '<Identity Id="dsh-companion" Publisher="synthetic" Version="0.0.1" TargetPlatform="win32-x64"/>';
   async function archive({ omit, extra, xml = identity } = {}) {
     const zip = new yazl.ZipFile(), chunks = [];
@@ -77,24 +75,14 @@ test('release versions and final ZIP enforce metadata, required runtime, privacy
   }
   const inspect = async options => checkReleaseArchive(root, await archive(options), await fs.mkdtemp(path.join(root, 'scan-')));
   assert.equal((await inspect()).files, files.size + 2);
-  await assert.rejects(inspect({ omit: 'runtime/bin/node.exe' }), /RELEASE_REQUIRED_FILE_MISSING/);
+  await assert.rejects(inspect({ omit: 'dist/extension.js' }), /RELEASE_REQUIRED_FILE_MISSING/);
   await assert.rejects(inspect({ xml: identity.replace('0.0.1', '0.0.2') }), /RELEASE_VSIX_MANIFEST_MISMATCH/);
   for (const entry of ['extension/runtime/.credentials.yaml', 'extension/runtime/node_modules/vendor/.env', 'extension/runtime/node_modules/vendor/session.jsonl.zstd',
     'extension/runtime/node_modules/vendor/archive.zip', 'extension/runtime/node_modules/vendor/.coveralls.yml', 'extension/profiles/local.json', 'extension/dist/test/private.js']) {
     await assert.rejects(inspect({ extra: [entry, 'synthetic-private-data'] }), /RELEASE_(PRIVATE|UNEXPECTED)_ENTRY/);
   }
   await assert.rejects(inspect({ extra: ['extension/README.md', ['C:', 'Users', 'synthetic-person'].join('\\')] }), /RELEASE_PERSONAL_HOME_PATH/);
-  await assert.rejects(inspect({ extra: ['extension/runtime/node_modules/vendor/file.js', os.homedir()] }), /RELEASE_PERSONAL_HOME_PATH/);
-  const publicFile = 'extension/runtime/node_modules/vendor/prebuilt.node';
-  const publicBytes = 'synthetic upstream compiler path: ' + os.homedir();
-  const approveHome = async content => fs.writeFile(approvals, JSON.stringify([{ file: publicFile,
-    sha256: require('node:crypto').createHash('sha256').update(content).digest('hex'), publicCompilerHome: true, rules: [] }]));
-  await approveHome(publicBytes);
-  assert.equal((await inspect({ extra: [publicFile, publicBytes] })).files, files.size + 3);
-  await assert.rejects(inspect({ extra: [publicFile, publicBytes + ' changed'] }), /RELEASE_PERSONAL_HOME_PATH/);
-  await assert.rejects(inspect({ extra: [publicFile.replace('prebuilt.node', 'other.node'), publicBytes] }), /RELEASE_PERSONAL_HOME_PATH/);
-  await approveHome(root);
-  await assert.rejects(inspect({ extra: [publicFile, root] }), /RELEASE_PERSONAL_HOME_PATH/);
+  await assert.rejects(inspect({ extra: ['extension/runtime/node_modules/vendor/file.js', 'synthetic'] }), /RELEASE_UNEXPECTED_ENTRY/);
   for (const entry of ['/absolute', '../outside', 'extension/../outside', 'extension\\file', 'extension/file:stream']) assert.equal(releaseEntryViolation(entry), 'RELEASE_UNSAFE_PATH');
   const target = await archive(), corrupted = await fs.readFile(target), central = corrupted.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]));
   corrupted.writeUInt32LE((corrupted.readUInt32LE(central + 16) ^ 1) >>> 0, central + 16); await fs.writeFile(target, corrupted);

@@ -6,10 +6,11 @@ import { SidebarView } from './sidebar/view';
 
 export function activate(context: vscode.ExtensionContext): void {
   const log = vscode.window.createOutputChannel('DSH Companion');
+  let view: SidebarView;
   const connection = new RuntimeConnection({ assetsDirectory: path.join(context.extensionPath, 'dist'),
-    dataHome: path.join(context.globalStorageUri.fsPath, 'dsh'), runtimeDirectory: path.join(context.extensionPath, 'runtime') });
+    onUnavailable: error => { void view.desktopUnavailable(error); } });
   const editor = new EditorContext();
-  const view = new SidebarView(context.extensionPath, connection, editor, log);
+  view = new SidebarView(context.extensionPath, connection, editor, log);
   context.subscriptions.push(log, editor, view,
     vscode.window.registerWebviewViewProvider('dshCompanion.chat', view, { webviewOptions: { retainContextWhenHidden: true } }),
     vscode.commands.registerCommand('dshCompanion.open', () => view.show()),

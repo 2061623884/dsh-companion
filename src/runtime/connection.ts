@@ -4,14 +4,13 @@ import * as path from 'node:path';
 import { createHash, createHmac } from 'node:crypto';
 import { Duplex } from 'node:stream';
 import { load, JSON_SCHEMA, YAMLException } from 'js-yaml';
-import { RuntimeClient, RuntimeAddress, defaultDesktopHome } from '../runtime/client';
+import { DesktopClient, DesktopError, DesktopAddress, desktopHome } from '../desktop/client';
 
 interface Options {
   credentialsPath?: string;
   desktopHome?: string;
-  acquire?: () => Promise<RuntimeAddress>;
-  dataHome: string;
-  runtimeDirectory: string;
+  acquire?: () => Promise<DesktopAddress>;
+  onUnavailable?: (error: DesktopError) => void;
   assetsDirectory: string;
 }
 interface Target { url: URL; secret: Buffer; pid: number }
@@ -26,16 +25,15 @@ export class RuntimeConnection {
   private baseUrl = '';
   private closed = false;
   private readonly sockets = new Set<Duplex>();
-  private readonly acquire: () => Promise<RuntimeAddress>;
-  private readonly runtime: RuntimeClient | undefined;
+  private readonly acquire: () => Promise<DesktopAddress[]>;
+  private readonly desktop = new DesktopClient();
   private readonly credentialsPath: string;
   constructor(private readonly options: Options) {
-    const desktopHome = options.desktopHome || defaultDesktopHome();
-    this.runtime = options.acquire ? undefined : new RuntimeClient(options.runtimeDirectory, options.dataHome, desktopHome);
-    this.acquire = options.acquire || (() => this.runtime!.acquire());
-    // The runtime keeps its browser grant in the credential store it shares with desktop DSH.
-    this.credentialsPath = options.credentialsPath || path.join(desktopHome, '.credentials.yaml');
+    this.acquire = options.acquire ? async () => [await options.acquire!()] : () => this.desktop.addresses();
+    this.credentialsPath = options.credentialsPath || path.join(options.desktopHome || desktopHome(), '.credentials.yaml');
   }
+
+  openDesktop(): Promise<void> { return this.desktop.open(); }
 
   start(): Promise<string> {
     if (this.closed) return Promise.reject(new Error('DSH 连接已释放'));
@@ -78,12 +76,15 @@ export class RuntimeConnection {
     if (this.closed) return Promise.reject(new Error('DSH 连接已释放'));
     if (this.target) return Promise.resolve(this.target);
     if (this.finding) return this.finding;
-    this.finding = this.findTarget().then(target => { this.target = target; return target; }).finally(() => { this.finding = null; });
+    this.finding = this.findTarget().then(target => { this.target = target; return target; }, error => {
+      if (error instanceof DesktopError) this.options.onUnavailable?.(error);
+      throw error;
+    }).finally(() => { this.finding = null; });
     return this.finding;
   }
 
   private async findTarget(): Promise<Target> {
-    const candidate = await this.acquire();
+    const candidates = await this.acquire();
     let text: string;
     try { text = await fs.readFile(this.credentialsPath, 'utf8'); }
     catch (error) {
@@ -99,7 +100,8 @@ export class RuntimeConnection {
     if (record?.kind !== 'grant' || record.payload?.version !== 1 || typeof secret !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(secret)) {
       throw new Error('运行时浏览器认证记录无效 (CREDENTIAL_SCHEMA)');
     }
-    {
+    const matches: Target[] = [];
+    for (const candidate of candidates) {
       const target = { url: new URL(`http://127.0.0.1:${candidate.port}`), pid: candidate.pid, secret: Buffer.from(secret, 'base64url') };
       const valid = await new Promise<boolean>((resolve, reject) => {
         const request = http.get(target.url, { headers: { cookie: this.cookie(target, target.url.host) } }, response => {
@@ -110,9 +112,11 @@ export class RuntimeConnection {
         });
         request.on('error', reject); request.setTimeout(3000, () => request.destroy(new Error('运行时端口探测超时')));
       });
-      if (!valid) throw new Error('DSH 运行时认证失败 (RUNTIME_AUTH_FAILED)');
-      return target;
+      if (valid) matches.push(target);
     }
+    if (matches.length > 1) throw new DesktopError('DSH_DESKTOP_MULTIPLE', '发现多个桌面后台，请保留需要连接的桌面实例后重试。');
+    if (!matches.length) throw new DesktopError('DSH_DESKTOP_NOT_READY', '桌面端尚未就绪或本机连接认证失败，请稍后重新连接。');
+    return matches[0];
   }
 
   private cookie(target: Target, authority: string): string {
@@ -160,7 +164,7 @@ export class RuntimeConnection {
           incoming.on('end', () => {
             const html = Buffer.concat(chunks).toString('utf8');
             const marker = '<script>(globalThis.__DSH_BOOT_READY__';
-            if (!html.includes(marker)) { reject(new Error('DSH 前端启动契约不兼容，当前适配版本为 0.2.1-rc.2')); return; }
+            if (!html.includes(marker)) { reject(new Error('桌面端界面接口与插件不兼容，请更新 DSH Companion 后重新连接。')); return; }
             delete headers['content-length']; delete headers.etag;
             headers['cache-control'] = 'no-store';
             response.writeHead(200, headers); response.end(html.replace(marker, '<script src="/__dsh_companion/bootstrap.js"></script>' + marker)); resolve();
@@ -188,7 +192,9 @@ export class RuntimeConnection {
       if (initial.length) socket.write(initial);
       if (head.length) peer.write(head);
       peer.pipe(socket); socket.pipe(peer);
-      peer.on('error', () => socket.destroy()); socket.on('error', () => peer.destroy()); socket.on('close', () => peer.destroy());
+      peer.on('error', () => socket.destroy());
+      peer.on('close', () => { if (!this.closed && this.target === target) this.target = null; socket.destroy(); });
+      socket.on('error', () => peer.destroy()); socket.on('close', () => peer.destroy());
     });
     upstream.on('response', incoming => { if (incoming.statusCode === 401 && this.target === target) this.target = null; incoming.resume(); socket.destroy(); });
     upstream.on('error', () => { if (this.target === target) this.target = null; socket.destroy(); });
@@ -196,7 +202,7 @@ export class RuntimeConnection {
   }
 
   async dispose(): Promise<void> {
-    this.closed = true; this.target = null; this.runtime?.dispose();
+    this.closed = true; this.target = null;
     for (const socket of this.sockets) socket.destroy();
     if (this.server) await new Promise<void>((resolve, reject) => this.server!.close(error => error ? reject(error) : resolve()));
     this.server = null;

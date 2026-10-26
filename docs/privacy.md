@@ -1,28 +1,11 @@
-# User-independent integration and publication privacy
+# Publication privacy
 
-## Supported users and authorization sources
+The desktop-connected VSIX contains only Companion-owned built JavaScript/CSS, its UI mark, package metadata, README/changelog and license notices. runtime/, tests, source, profiles, credentials, sessions and diagnostic records are excluded. Runtime dependencies retained for historical development fixtures are not product assets.
 
-The current release supports local Windows x64 VS Code. The desktop source is resolved from the current user's `DSH_HOME`, or their home directory's `.dsh` folder when unset. Companion storage is supplied by VS Code's `globalStorageUri`. No developer username, account ID, absolute installation path, bearer token or port is part of this discovery contract. Desktop's standard `profiles/desktop` location is a product convention, not a personal directory.
+Desktop installation discovery and data location resolution use the current Windows environment. The desktop browser grant is read only for in-memory loopback authentication. Credentials, personal paths, raw diagnostic records and source contents must never be committed or uploaded.
 
-WorkBuddy is the first read-only authorization adapter. Every user supplies their own existing authorization through their local environment; no authorization from a developer machine is distributed. CN and international credentials remain separate, independent Companion authorization retains priority, and borrowed authorization is never copied/refreshed/deleted. Expiry and revocation are not bypassed. Tests cover different source directories with spaces/Unicode and separate CN/global identities; they do not establish live acceptance for every account or unsupported platform.
+Run check:source and a redacted Gitleaks source/history scan before any later publication. check:release validates every ZIP entry, identity/version, generated assets, personal paths and full-file secret coverage. Public dependency exceptions are exact-hash/rule based; no dependency directory is excluded from scanning. In the desktop-connected archive, runtime entries are rejected entirely.
 
-Future providers belong in their own runtime authorization adapters beside `src/runtime/workbuddy-auth.mjs`, wired through a checked provider construction seam. Their storage format, realm, refresh behavior and ownership must be checked independently before enabling reuse. Editor context and sidebar code must not learn provider credential formats. Providers that keep sign-in in DSH's credential seam need no adapter: the runtime shares the user's own desktop credential store in place (docs/architecture.md), so nothing is copied and no developer credential is involved. Adapters remain only for providers with their own credential files.
+Installed acceptance uses synthetic desktop homes, isolated VS Code profiles and intercepted external requests. Daily desktop settings, credentials and conversations remain outside the fixture. Results copied to public metadata must be limited to versions, hashes, counts and verification booleans.
 
-## Repository and artifacts
-
-Release candidate directories are local/ignored and allow only the VSIX, SHA256SUMS, release.json and release-notes.md. Generated metadata selects validated public identifiers, hashes, editor versions and summary counts; it does not copy report objects, raw diagnostics, account records, PIDs or machine paths. User-facing notes come from the reviewed versioned changelog and undergo document secret scanning. Candidate generation/check/rehearsal has no upload or publication path. Offline rehearsal does not authenticate local run IDs; optional online rehearsal makes GET requests only and exposes safe failure codes. Source-content fingerprints distinguish uncommitted previews from clean hosted candidates. See docs/release.md.
-
-Only implementation, synthetic fixtures, public dependency metadata/licenses and sanitized aggregate validation belong in Git. Do not commit credentials, real account identity, personal email/phone, machine paths, raw request bodies, session content, screenshots of accounts, local profiles or diagnostic dumps. Required upstream copyright notices and the public repository owner URL remain project metadata.
-
-`.gitignore` excludes known credentials, environments, runtime data and generated output. `.vscodeignore` separately excludes them from the VSIX. Ignore rules do not remove already tracked files or Git history: inspect tracked files, all reachable commits and the source archive/VSIX before publication. Validation records should contain counts, safe codes, timings and boolean checks; never raw authorization or account identifiers. Local untracked reports are not automatically public artifacts.
-
-Before committing/pushing, run a current Gitleaks CLI locally with full redaction:
-
-```sh
-gitleaks git --log-opts=--all --redact=100 --no-banner .
-gitleaks git --staged --redact=100 --no-banner .
-```
-
-Inspect final source and installation archives as well. A default `gitleaks dir --max-archive-depth=1 --redact=100 <archive>` scan skips some content, including node_modules. For the VSIX use `npm run check:release` after preparing the verified tool: it checks inventory/integrity and sends all extracted files to the scanner, with a synthetic vendor canary proving coverage. Exact hashes/rules identify reviewed public upstream false positives; directories are not exempted. Nested installation/compressed archives are rejected rather than silently treated as inspected plaintext. Owned files reject generic home paths; all files reject the builder's actual home/workspace paths. Two integrity-verified public pnpm prebuild hashes have a narrow exception for an upstream compiler home matching the hosted runner home; workspace paths and secret scanning remain enforced. Public dependency documentation/compiler paths remain public upstream material. See docs/release.md for scope and commands.
-
-Also review personal identities and visible screenshots; a secret scanner does not prove complete absence of personal information. Keep raw/redacted scanner reports ignored/local and outside public source or uploaded artifacts. This development workflow neither uploads code to a scanning service nor publishes/pushes automatically.
+The current request authorizes a source push only, with no tag, Release or installer publication. A later hosted release must first provision and verify the desktop fixture used by its runtime/native jobs, then validate the final original VSIX bytes.
